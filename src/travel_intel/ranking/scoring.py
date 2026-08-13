@@ -22,6 +22,7 @@ from travel_intel.domain.models import (
     TripRequest,
 )
 from travel_intel.features.accommodations import build_accommodation_features
+from travel_intel.ml.price_model import HedonicPriceModel
 
 DEFAULT_WEIGHTS: dict[str, float] = {
     "budget_fit": 0.25,
@@ -42,6 +43,15 @@ BUDGET_OVERRUN_TOLERANCE = 0.5
 """How far past its allowance a room may go before `budget_fit` hits zero (+50 %).
 
 Beyond that the room is eating the food and activities budget, and no rating compensates.
+"""
+
+VALUE_LOG_SCALE = 0.5
+"""Half-width, in log price, of the band the `value_for_money` factor spans.
+
+A property priced exactly as its features predict scores 0.5 — the neutral point, and a
+meaningful one: "fairly priced" is neither a virtue nor a fault. `exp(±0.5)` puts the
+extremes at roughly 61 % and 165 % of the predicted price, which covers the residual spread
+this dataset actually shows without saturating the factor for everything.
 """
 
 MAX_USEFUL_DISTANCE_KM = 10.0
@@ -68,6 +78,19 @@ def budget_fit(budget_ratio: float) -> float:
 def location_score(distance_km: float) -> float:
     """Linear decay from the city centre to `MAX_USEFUL_DISTANCE_KM`."""
     return max(0.0, 1.0 - distance_km / MAX_USEFUL_DISTANCE_KM)
+
+
+def value_for_money(actual_price: float, predicted_price: float) -> float:
+    """Turn a hedonic price residual into a [0, 1] factor.
+
+    Below its predicted price is good value, above it is poor value, and the comparison is
+    proportional (log) rather than absolute: €20 off a €70 room is a real discount, €20 off
+    a €600 suite is a rounding error.
+    """
+    if actual_price <= 0 or predicted_price <= 0:
+        raise ValueError("prices must be positive to compare them")
+    residual = math.log(actual_price) - math.log(predicted_price)
+    return min(1.0, max(0.0, 0.5 - residual / (2 * VALUE_LOG_SCALE)))
 
 
 def weighted_score(
@@ -100,14 +123,21 @@ def rank_accommodations(
     *,
     policy: BudgetPolicy = DEFAULT_BUDGET_POLICY,
     weights: Mapping[str, float] | None = None,
+    price_model: HedonicPriceModel | None = None,
 ) -> tuple[ScoredAccommodation, ...]:
     """Score and order candidates, best first.
+
+    Passing a `price_model` switches on the `value_for_money` factor. The model is fitted on
+    this candidate set and predicts it back: "cheap for what it is" is a claim about a
+    market, so the market is the options actually on the table. Its ability to generalise to
+    unseen properties is a different question, answered by `ml.cross_validate`.
 
     Ties break on accommodation id so that the same input always produces the same order —
     a ranking that reshuffles between runs cannot be evaluated.
     """
     applied = dict(weights or DEFAULT_WEIGHTS)
     features = build_accommodation_features(records, request, policy)
+    value_scores = _value_scores(features, price_model)
 
     scored: list[ScoredAccommodation] = []
     for record in records:
@@ -117,6 +147,7 @@ def rank_accommodations(
             rating=_scale_rating(_optional(features.at[record.id, "rating_shrunk"])),
             location=_scale_distance(_optional(features.at[record.id, "distance_km"])),
             preference_match=_optional(features.at[record.id, "preference_match"]),
+            value_for_money=value_scores.get(record.id),
         )
         overall, effective = weighted_score(breakdown.as_factors(), applied)
         scored.append(
@@ -134,6 +165,21 @@ def rank_accommodations(
     return tuple(
         item.model_copy(update={"rank": position}) for position, item in enumerate(scored, start=1)
     )
+
+
+def _value_scores(
+    features: pd.DataFrame,
+    price_model: HedonicPriceModel | None,
+) -> dict[str, float]:
+    """Hedonic value score per accommodation id, or empty when no model is supplied."""
+    if price_model is None:
+        return {}
+    predicted = price_model.fit_predict(features)
+    actual = features["price_per_night"].to_numpy()
+    return {
+        str(identifier): value_for_money(float(observed), float(estimate))
+        for identifier, observed, estimate in zip(features.index, actual, predicted, strict=True)
+    }
 
 
 def _number(value: object) -> float:

@@ -24,8 +24,8 @@ Three principles drive every design decision here:
 | M2 | Retrieval adapters + real Tokyo snapshot (30 hotels, 27 activities) | ✅ done |
 | M3 | Budget policy, feature engineering, explainable ranking | ✅ done |
 | M4 | Itinerary, budget composition, hard-constraint validation | ✅ done |
-| M5 | ML price model → `value_for_money` factor | ⬜ next |
-| M6 | LLM: preference normalisation + grounded explanation | ⬜ |
+| M5 | Hedonic price model → `value_for_money` factor | ✅ done |
+| M6 | LLM: preference normalisation + grounded explanation | ⬜ next |
 | M7 | Reproducible evaluation harness | ⬜ |
 | M8 | FastAPI endpoint, Streamlit UI, full docs, Azure→AWS map | ⬜ |
 
@@ -53,5 +53,7 @@ data or to the local Ollama model.
   and what the data honestly cannot support.
 - [`docs/ranking.md`](docs/ranking.md) — the scoring formula, why each weight is what it is,
   and why missing factors are dropped rather than scored as zero.
+- [`docs/ml.md`](docs/ml.md) — the hedonic price model, its cross-validated results against
+  two baselines, and what the data cannot support.
 - `docs/architecture.md` — pipeline, data flow, scalability, Azure→AWS mapping *(M8)*.
 - `docs/evaluation.md` — metrics, golden set, results *(M7)*.
