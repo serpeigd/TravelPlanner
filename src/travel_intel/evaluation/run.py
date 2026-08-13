@@ -69,8 +69,8 @@ def main() -> None:
 
     # -- 2. reproducibility ------------------------------------------------------------
     _section("2. REPRODUCIBILITY  -  does the same request give the same answer?")
-    first = run_pipeline(reference, settings)
-    second = run_pipeline(reference, settings)
+    first = run_pipeline(reference, settings).trip
+    second = run_pipeline(reference, settings).trip
     identical = (
         first.recommended.accommodation.id == second.recommended.accommodation.id
         and first.budget.total == second.budget.total

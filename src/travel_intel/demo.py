@@ -37,8 +37,13 @@ def main() -> None:
         f"{request.currency.value} | {', '.join(p.value for p in request.preferences)}\n"
     )
 
-    trip = run_pipeline(request, settings)
+    result = run_pipeline(request, settings)
+    trip = result.trip
     hotel = trip.recommended
+    print(
+        f"FUNNEL  {result.candidates.retrieved} retrieved -> "
+        f"{result.candidates.kept} candidates -> {1 + len(trip.alternatives)} offered\n"
+    )
 
     print("RECOMMENDED")
     print(f"  {hotel.accommodation.name}  ({hotel.accommodation.neighborhood})")

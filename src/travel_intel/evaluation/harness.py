@@ -60,7 +60,7 @@ class ScenarioResult:
 def evaluate_scenario(scenario: Scenario, settings: Settings | None = None) -> ScenarioResult:
     request = scenario.request
     try:
-        trip = run_pipeline(request, settings)
+        trip = run_pipeline(request, settings).trip
     except (NoCandidatesError, ProviderError) as refusal:
         # Refusing is a legitimate outcome, not an error to be swallowed. What matters is
         # whether the refusal was the right answer and whether it explains itself.

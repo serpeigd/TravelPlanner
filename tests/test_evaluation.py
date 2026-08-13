@@ -77,8 +77,8 @@ class TestGoldenSet:
 class TestReproducibility:
     def test_the_same_request_gives_the_same_answer(self) -> None:
         request = GOLDEN_SET[0].request
-        first = run_pipeline(request, SETTINGS)
-        second = run_pipeline(request, SETTINGS)
+        first = run_pipeline(request, SETTINGS).trip
+        second = run_pipeline(request, SETTINGS).trip
         assert first.recommended.accommodation.id == second.recommended.accommodation.id
         assert first.budget.total == second.budget.total
         assert [a.id for a in first.itinerary.selected] == [a.id for a in second.itinerary.selected]
@@ -144,7 +144,7 @@ class TestFactorAblation:
 @pytest.fixture(scope="module")
 def context() -> object:
     """The grounding context of the reference plan, with the figures the cases need."""
-    trip = run_pipeline(GOLDEN_SET[0].request, SETTINGS)
+    trip = run_pipeline(GOLDEN_SET[0].request, SETTINGS).trip
     return (
         build_context(build_payload(trip)),
         trip.recommended.accommodation.id,
