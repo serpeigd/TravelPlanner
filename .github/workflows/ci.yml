@@ -16,8 +16,11 @@ jobs:
           python-version: "3.12"
           cache: pip
 
+      # `ui` is installed too, not just `dev`: mypy type-checks all of `src/`, and that
+      # includes the Streamlit module. Without the extra it fails on a missing import — which
+      # is exactly what happened the first time this ran.
       - name: Install
-        run: pip install -e ".[dev]"
+        run: pip install -e ".[dev,ui]"
 
       - name: Lint
         run: ruff check .
