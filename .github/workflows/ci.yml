@@ -35,3 +35,11 @@ jobs:
         env:
           TRAVEL_INTEL_DATA_MODE: snapshot
           TRAVEL_INTEL_LLM_PROVIDER: fake
+
+      # The evaluation report is offline and seeded, so CI can run it like any other check.
+      # If a change quietly degrades the recommendations, this is where it shows up.
+      - name: Evaluation report
+        run: python -m travel_intel.evaluation.run
+        env:
+          TRAVEL_INTEL_DATA_MODE: snapshot
+          TRAVEL_INTEL_LLM_PROVIDER: fake

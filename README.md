@@ -26,8 +26,8 @@ Three principles drive every design decision here:
 | M4 | Itinerary, budget composition, hard-constraint validation | ✅ done |
 | M5 | Hedonic price model → `value_for_money` factor | ✅ done |
 | M6 | LLM: preference interpretation + grounded explanation | ✅ done |
-| M7 | Reproducible evaluation harness | ⬜ next |
-| M8 | FastAPI endpoint, Streamlit UI, full docs, Azure→AWS map | ⬜ |
+| M7 | Reproducible evaluation harness | ✅ done |
+| M8 | FastAPI endpoint, Streamlit UI, full docs, Azure→AWS map | ⬜ next |
 
 ## Quickstart
 
@@ -65,4 +65,5 @@ deterministic template and is the default in CI. See `.env.example` for the rest
 - [`docs/llm.md`](docs/llm.md) — the LLM's two jobs, the grounding check, what the model got
   wrong on the first real run, and what the check still cannot catch.
 - `docs/architecture.md` — pipeline, data flow, scalability, Azure→AWS mapping *(M8)*.
-- `docs/evaluation.md` — metrics, golden set, results *(M7)*.
+- [`docs/evaluation.md`](docs/evaluation.md) — the golden set, what each metric is *for*, how
+  ranking quality is measured without relevance labels, and what is deliberately not measured.

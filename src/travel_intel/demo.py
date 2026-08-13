@@ -12,14 +12,11 @@ from __future__ import annotations
 import time
 from datetime import date
 
-from travel_intel.config import Settings, get_settings
+from travel_intel.config import get_settings
 from travel_intel.domain.enums import Preference
 from travel_intel.domain.models import TripRequest
 from travel_intel.llm.factory import build_explainer
-from travel_intel.ml.price_model import HedonicPriceModel
-from travel_intel.ranking import generate_candidates, rank_accommodations
-from travel_intel.retrieval.factory import build_providers
-from travel_intel.services import PlannedTrip, plan_trip
+from travel_intel.services.pipeline import run_pipeline
 
 REFERENCE_REQUEST = TripRequest(
     destination="Tokyo",
@@ -31,23 +28,6 @@ REFERENCE_REQUEST = TripRequest(
 )
 
 
-def run(request: TripRequest, settings: Settings | None = None) -> PlannedTrip:
-    """The whole pipeline, in the order the architecture diagram claims."""
-    resolved = settings or get_settings()
-    accommodation_provider, activity_provider = build_providers(resolved)
-
-    accommodations = accommodation_provider.search_accommodations(request)
-    activities = activity_provider.search_activities(request)
-    candidates = generate_candidates(accommodations.records, request)
-    ranked = rank_accommodations(candidates.records, request, price_model=HedonicPriceModel())
-    return plan_trip(
-        ranked,
-        activities.records,
-        request,
-        retrieval_warnings=accommodations.warnings + activities.warnings,
-    )
-
-
 def main() -> None:
     settings = get_settings()
     request = REFERENCE_REQUEST
@@ -57,7 +37,7 @@ def main() -> None:
         f"{request.currency.value} | {', '.join(p.value for p in request.preferences)}\n"
     )
 
-    trip = run(request, settings)
+    trip = run_pipeline(request, settings)
     hotel = trip.recommended
 
     print("RECOMMENDED")
