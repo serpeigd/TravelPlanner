@@ -15,7 +15,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from travel_intel.config import Settings, get_settings
-from travel_intel.domain.models import DataSourceInfo, TripRequest
+from travel_intel.domain.models import DataSourceInfo, ScoredAccommodation, TripRequest
 from travel_intel.ml.price_model import HedonicPriceModel
 from travel_intel.ranking import generate_candidates, rank_accommodations
 from travel_intel.ranking.candidates import CandidateSet
@@ -34,6 +34,12 @@ class PipelineResult:
 
     trip: PlannedTrip
     candidates: CandidateSet
+    ranked: tuple[ScoredAccommodation, ...]
+    """Every scored candidate in order, not just the handful offered.
+
+    The response only needs the winner and a few alternatives; anything inspecting *how* the
+    ranking behaved — the UI, an audit, a debugging session — needs the whole ordering.
+    """
     sources: tuple[DataSourceInfo, ...]
     warnings: tuple[str, ...]
 
@@ -54,6 +60,7 @@ def run_pipeline(request: TripRequest, settings: Settings | None = None) -> Pipe
     return PipelineResult(
         trip=trip,
         candidates=candidates,
+        ranked=ranked,
         sources=(accommodations.source, activities.source, trip.assumptions.source()),
         warnings=warnings,
     )
