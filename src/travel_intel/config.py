@@ -9,10 +9,23 @@ from pathlib import Path
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-DATA_DIR = PROJECT_ROOT / "data"
-FIXTURES_DIR = DATA_DIR / "fixtures"
-ARTIFACTS_DIR = PROJECT_ROOT / "artifacts"
+PACKAGE_ROOT = Path(__file__).resolve().parent
+FIXTURES_DIR = PACKAGE_ROOT / "data" / "fixtures"
+"""The snapshot ships *inside* the package, not beside it in the repository.
+
+This started life as `<repo>/data/fixtures`, resolved by walking up from this file. That
+works under an editable install, where this file really does sit in the source tree — and
+breaks the moment the package is installed normally, because then it lives in
+`site-packages/travel_intel/` and walking up two levels lands in the Python library
+directory. The symptom was a deployed app reporting `Available: none` while every local test
+passed.
+
+Reference data the default configuration cannot run without belongs with the code it serves,
+so it travels through wheels, containers and hosted deployments unchanged.
+"""
+
+ARTIFACTS_DIR = Path("artifacts")
+"""Relative to the working directory: these are regenerable outputs, not shipped assets."""
 
 
 class DataMode(StrEnum):

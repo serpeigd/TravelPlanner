@@ -303,6 +303,7 @@ Stated plainly, because a limitation you have to be told about is a limitation y
 
 [MIT](LICENSE). Use it, fork it, learn from it.
 
-The dataset under `data/fixtures/` is a small sample of publicly listed Booking.com data,
+The dataset under `src/travel_intel/data/fixtures/` is a small sample of publicly listed
+Booking.com data,
 captured once for demonstration and attributed with source URLs. It is included so the
 project is reproducible, not as a redistributable dataset.

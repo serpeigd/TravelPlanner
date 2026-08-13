@@ -35,6 +35,11 @@ dev = [
 [tool.setuptools.packages.find]
 where = ["src"]
 
+# The frozen snapshot is packaged with the code. Without this the wheel would ship the
+# modules and leave the data behind, and the default configuration would find nothing.
+[tool.setuptools.package-data]
+travel_intel = ["data/fixtures/*/*.json"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
