@@ -5,9 +5,11 @@ harness use. That is the point of a snapshot: the test suite exercises the real 
 """
 
 from datetime import date
+from pathlib import Path
 
 import pytest
 
+import travel_intel
 from travel_intel.config import DataMode, LLMProvider, Settings
 from travel_intel.domain.enums import Preference, Provenance
 from travel_intel.domain.errors import NoCandidatesError, ProviderError
@@ -36,6 +38,24 @@ def make_request(**overrides: object) -> TripRequest:
 @pytest.fixture
 def provider() -> SnapshotProvider:
     return SnapshotProvider(FIXTURES)
+
+
+class TestPackaging:
+    def test_the_snapshot_ships_inside_the_package(self) -> None:
+        """Regression: the fixture path used to be resolved relative to the repository root.
+
+        That works under an editable install, where `config.py` really does sit in the source
+        tree. Installed normally — a wheel, a container, Streamlit Cloud — the same file lives
+        in `site-packages/travel_intel/` and walking up two levels lands in the Python library
+        directory. The deployed app reported `Available: none` while every local test passed,
+        because every local test ran against an editable install.
+        """
+        package_dir = Path(travel_intel.__file__).resolve().parent
+        fixtures = Settings().fixtures_dir.resolve()
+        assert fixtures.is_relative_to(package_dir), (
+            f"{fixtures} is outside {package_dir}: it will not survive a non-editable install"
+        )
+        assert fixtures.is_dir()
 
 
 class TestDestinationKey:

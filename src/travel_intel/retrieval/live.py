@@ -2,7 +2,8 @@
 
 Deliberately not implemented, and deliberately not faked.
 
-The snapshot in `data/fixtures/` is real Booking.com data, but it was captured through an
+The snapshot in `travel_intel/data/fixtures/` is real Booking.com data, but it was captured
+through an
 assistant-side MCP connector — a tool available to the developer, not an HTTP endpoint this
 process can call, and not one that ships with credentials. Writing an untested client
 against an API we cannot exercise would mean shipping code that claims to work.

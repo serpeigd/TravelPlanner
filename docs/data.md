@@ -4,7 +4,11 @@
 
 Real Booking.com data for Tokyo, 10–17 September 2026, 2 adults, 1 room, EUR, captured once
 on 2026-08-13 through the Booking.com MCP connector and committed as a versioned fixture in
-`data/fixtures/tokyo_2026-09-10_2026-09-17/`.
+`src/travel_intel/data/fixtures/tokyo_2026-09-10_2026-09-17/`.
+
+It lives *inside* the package rather than beside it, so it travels through wheels, containers
+and hosted deployments. Resolving it relative to the repository root worked under an editable
+install and broke everywhere else.
 
 | File | Records | Captured by |
 |---|---|---|

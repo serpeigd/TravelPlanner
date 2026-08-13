@@ -330,7 +330,7 @@ of any kind**; the full disclaimer is in the LICENSE file.
 That grant covers this project's own code and prose. It does **not** cover, and cannot
 relicense, the following:
 
-- **The dataset under `data/fixtures/`.** A small sample of publicly listed Booking.com data
+- **The dataset under `src/travel_intel/data/fixtures/`.** A small sample of publicly listed Booking.com data
   for one city and one date range, captured once on 2026-08-13 through the Booking.com MCP
   connector and attributed with source URLs. It is committed so the pipeline is reproducible
   and its numbers auditable — **not** as a redistributable dataset, and not under the MIT
