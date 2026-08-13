@@ -21,8 +21,8 @@ Three principles drive every design decision here:
 |---|---|---|
 | M0 | Scaffolding: packaging, ruff, mypy (strict), pytest, CI | ✅ done |
 | M1 | Domain contracts (Pydantic), provenance model, config | ✅ done |
-| M2 | Retrieval adapters: frozen snapshot + live mode | ⬜ next |
-| M3 | Feature engineering + explainable ranking | ⬜ |
+| M2 | Retrieval adapters + real Tokyo snapshot (30 hotels, 27 activities) | ✅ done |
+| M3 | Feature engineering + explainable ranking | ⬜ next |
 | M4 | Hard-constraint validation + budget breakdown | ⬜ |
 | M5 | ML price model → `value_for_money` factor | ⬜ |
 | M6 | LLM: preference normalisation + grounded explanation | ⬜ |
@@ -47,5 +47,7 @@ data or to the local Ollama model.
 - [`docs/decisions.md`](docs/decisions.md) — architecture decision records, including why
   there is no agent framework and why the ML component is a price model rather than
   learning-to-rank.
+- [`docs/data.md`](docs/data.md) — what the dataset is, what was decided at capture time,
+  and what the data honestly cannot support.
 - `docs/architecture.md` — pipeline, data flow, scalability, Azure→AWS mapping *(M8)*.
 - `docs/evaluation.md` — metrics, golden set, results *(M7)*.

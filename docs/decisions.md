@@ -77,14 +77,21 @@ the point: the project should show it knows when not to use ML.
 **Context.** Real data makes the demo credible; reproducibility makes the evaluation
 meaningful. Live API calls give the first and destroy the second.
 
-**Decision.** One `AccommodationProvider` / `ActivityProvider` interface with two
+**Decision.** One `AccommodationProvider` / `ActivityProvider` Protocol with two
 implementations. `snapshot` reads real provider data captured once and committed as a
-versioned fixture; `live` calls the provider. `snapshot` is the default and the only mode
-used by tests and the evaluation harness.
+versioned fixture, and is the default and the only mode used by tests and evaluation.
+`live` is the seam for a real API client and is **deliberately unimplemented**: the snapshot
+was captured through an assistant-side MCP connector, which is not an endpoint this process
+can call, and no provider credentials exist. It raises `ProviderError` with an explanatory
+message rather than silently falling back to the snapshot — a fallback would make the mode
+flag a lie.
 
 **Consequences.** The evaluation harness is deterministic and runs offline in CI. Every
 record carries a `Provenance` value, so retrieved facts, frozen snapshots, synthetic rows
-and model prose are never confused with each other in the UI or in the answer.
+and model prose are never confused with each other in the UI or in the answer. Any request
+that diverges from the captured query (different dates, longer stay, larger party) returns
+an explicit warning instead of a confidently wrong price. What live mode would need is
+listed in `retrieval/live.py`; nothing downstream changes.
 
 **Rejected.** Calling the live API everywhere and mocking it in tests. That leaves the
 demo's own numbers unreproducible and the fixture drifting from the real payload shape.

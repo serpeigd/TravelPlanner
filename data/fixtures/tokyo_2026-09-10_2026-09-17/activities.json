@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "provenance": "snapshot",
+  "provider": "booking.com",
+  "captured_at": "2026-08-13",
+  "captured_via": "Booking.com MCP connector (attractions_search)",
+  "currency": "EUR",
+  "start_date": "2026-09-10",
+  "end_date": "2026-09-17",
+  "queries": [
+    {"key": "food_drinks", "destination": "Tokyo, Japan", "categories": ["food_drinks"]},
+    {"key": "museums_arts_culture", "destination": "Tokyo, Japan", "categories": ["museums_arts_culture"]},
+    {"key": "nature_outdoor", "destination": "Tokyo, Japan", "categories": ["nature_outdoor"]}
+  ],
+  "notes": {
+    "categories": "The provider returns opaque category ids (e.g. PTTLE4gUrt7p) with no public dictionary, so they are unusable. Instead one search was issued PER category and each record carries the categories whose search returned it (`source_queries`). The tag is therefore the provider's own claim, not our guess.",
+    "category_noise": "Provider tagging is noisy: a bar-hopping tour is returned under `nature_outdoor`. This is real-world label noise and is NOT corrected here — correcting it silently would hide a genuine data-quality problem. See docs/data.md.",
+    "review_score": "Provider scale is 0-5 (accommodations use 0-10). A score of 0 with 0 reviews means 'no reviews yet' and is stored as null, not as a bad score.",
+    "coordinates": "This endpoint returns no coordinates and often no address, so activity-to-hotel distance cannot be computed. The ranking must not claim to use it.",
+    "duration": "Not exposed by this endpoint. Itinerary planning uses a documented default rather than a fabricated per-activity duration.",
+    "price": "Price per person.",
+    "url": "Query string stripped; canonical product URL kept."
+  },
+  "records": [
+    {"id": "PR4W62tGbg0w", "name": "Asakusa Tour with Teahouse and Lunch", "url": "https://www.booking.com/attractions/jp/pr4w62tgbg0w-asakusa-tour-with-teahouse-and-lunch.en-gb.html", "price_per_person": 75.06, "review_score": null, "review_count": 0, "address": "Kaminarimon Police Box, 1 Chome-3-1 Asakusa, Taito City", "source_queries": ["food_drinks"]},
+    {"id": "PRGECJsLF2qd", "name": "Shinjuku Golden Gai Food Tour", "url": "https://www.booking.com/attractions/jp/prgecjslf2qd-shinjuku-golden-gai-food-tour.en-gb.html", "price_per_person": 144.64, "review_score": 5.0, "review_count": 1, "address": "1-chōme-2-6 Nishishinjuku, Shinjuku City", "source_queries": ["food_drinks", "nature_outdoor"]},
+    {"id": "PRAtySGWfdFZ", "name": "Yakiniku Experience in Nishiazabu", "url": "https://www.booking.com/attractions/jp/pratysgwfdfz-yakiniku-experience-in-nishiazabu.en-gb.html", "price_per_person": 30.13, "review_score": null, "review_count": 0, "address": "Nishiazabu, 4 Chome−11−3 横山ビル １F", "source_queries": ["food_drinks"]},
+    {"id": "PRuztBEYeWXJ", "name": "Shibuya Bar-hopping Night Tour", "url": "https://www.booking.com/attractions/jp/pruztbeyewxj-shibuya-bar-hopping-night-tour.en-gb.html", "price_per_person": 32.87, "review_score": null, "review_count": 0, "address": "Shibuya City, Udagawacho, 21−6, Q Front, 1F", "source_queries": ["food_drinks"]},
+    {"id": "PR7crGEceZe2", "name": "Yakiniku Meal at Nikuazabu Shinbashi", "url": "https://www.booking.com/attractions/jp/pr7crgeceze2-yakiniku-meal-at-nikuazabu-shinbashi.en-gb.html", "price_per_person": 30.13, "review_score": null, "review_count": 0, "address": "9F GEMS, 2-12-8 Shinbashi, Minato-ku", "source_queries": ["food_drinks"]},
+    {"id": "PRI5Qjj1KE74", "name": "Golden Gai Hidden Eats A Personalized Shinjuku Food Tour By Guide", "url": "https://www.booking.com/attractions/jp/pri5qjj1ke74-tokyo-shinjuku-food-tour-omoide-yokuchou-goldengai-kabukichou.en-gb.html", "price_per_person": 169.05, "review_score": 3.0, "review_count": 2, "address": "Shinjuku Station, 1", "source_queries": ["food_drinks"]},
+    {"id": "PR84k4NYhYRS", "name": "Tsukiji Fish Market Food Tour", "url": "https://www.booking.com/attractions/jp/pr84k4nyhyrs-tsukiji-fish-market-food-tour.en-gb.html", "price_per_person": 80.0, "review_score": 4.83, "review_count": 6, "address": "3 Chome-15-1 Tsukiji, Chuo City, Tokyo 104-8435, Japan", "source_queries": ["food_drinks"]},
+    {"id": "PRUVJMsHViqF", "name": "Sakura Restaurant Dinner with Tempura", "url": "https://www.booking.com/attractions/jp/pruvjmshviqf-sakura-restaurant-dinner-with-tempura.en-gb.html", "price_per_person": 87.66, "review_score": null, "review_count": 0, "address": "1 Chome-9-1 Daiba, Minato City", "source_queries": ["food_drinks"]},
+    {"id": "PRa9wcSIzAqS", "name": "Shinjuku Izakaya and Golden Gai Bar Hopping Tour", "url": "https://www.booking.com/attractions/jp/pra9wcsizaqs-shinjuku-nightlife-and-bar-tour-with-dinner.en-gb.html", "price_per_person": 83.47, "review_score": 4.6, "review_count": 42, "address": "Tajimaya Coffee, 6", "source_queries": ["food_drinks", "nature_outdoor"]},
+    {"id": "PRJ3fIYp6trj", "name": "Sushi-making Experience", "url": "https://www.booking.com/attractions/jp/prj3fiyp6trj-sushi-making-experience.en-gb.html", "price_per_person": 77.29, "review_score": null, "review_count": 0, "address": "Cooking Sun Tokyo, 18-39 Shinanomachi, Shinjuku City", "source_queries": ["food_drinks"]},
+
+    {"id": "PRgFI2SQPpjC", "name": "Madame Tussauds Ticket", "url": "https://www.booking.com/attractions/jp/prgfi2sqppjc-madame-tussauds-ticket.en-gb.html", "price_per_person": 11.51, "review_score": 4.67, "review_count": 29, "address": "Madame Tussauds Tokyo, 1, 1 Chome-6 Daiba, Minato-ku", "source_queries": ["museums_arts_culture"]},
+    {"id": "PRhbwvnXW4vA", "name": "Tokyo Private Customized Walking Tour (Option Car Tour Available)", "url": "https://www.booking.com/attractions/jp/prhbwvnxw4va-private-custom-tour-with-a-local-guide-tokyo.en-gb.html", "price_per_person": 75.0, "review_score": 4.62, "review_count": 141, "address": null, "source_queries": ["museums_arts_culture"]},
+    {"id": "PRjr2HDdI2qd", "name": "Tokyo Skytree Admission Ticket", "url": "https://www.booking.com/attractions/jp/prjr2hddi2qd-tokyo-skytree-admission-ticket.en-gb.html", "price_per_person": 12.06, "review_score": 4.36, "review_count": 2316, "address": "Tokyo Skytree, 1-1-2 Oshiage, Sumida-ku, 131-0045", "source_queries": ["museums_arts_culture"]},
+    {"id": "PRqVwBUnQfbi", "name": "Audio Guide of City Highlights", "url": "https://www.booking.com/attractions/jp/prqvwbunqfbi-audio-guide-of-city-highlights.en-gb.html", "price_per_person": 5.99, "review_score": 3.14, "review_count": 9, "address": null, "source_queries": ["museums_arts_culture"]},
+    {"id": "PR6bQjr3MLir", "name": "Tokyo : Tsukiji Fish Market Walking Culture Tour", "url": "https://www.booking.com/attractions/jp/pr6bqjr3mlir-tsukiji-outer-market-tour.en-gb.html", "price_per_person": 21.15, "review_score": 4.85, "review_count": 11, "address": "千社額棟, 2", "source_queries": ["museums_arts_culture"]},
+    {"id": "PR7Z3N5SSRa6", "name": "Customized Private City Tour", "url": "https://www.booking.com/attractions/jp/pr7z3n5ssra6-customized-private-city-tour.en-gb.html", "price_per_person": 86.55, "review_score": null, "review_count": 0, "address": "Tokyo Tower, Shibakoen", "source_queries": ["museums_arts_culture"]},
+    {"id": "PRLQj1ERSH3L", "name": "Sumo Morning Practice Tour", "url": "https://www.booking.com/attractions/jp/prlqj1ersh3l-sumo-morning-practice-tour.en-gb.html", "price_per_person": 81.0, "review_score": 4.83, "review_count": 7, "address": "両国駅前店, 1 Chome−３−5 Re.Ra.Ku,Yokoami, Sumida City", "source_queries": ["museums_arts_culture"]},
+    {"id": "PRfoYk6Ulo0R", "name": "Mt. Fuji, Lake Kawaguchi and Yamanaka with Onsen", "url": "https://www.booking.com/attractions/jp/prfoyk6ulo0r-mt-fuji-lake-kawaguchi-and-yamanaka-with-onsen.en-gb.html", "price_per_person": 50.97, "review_score": 3.46, "review_count": 33, "address": "JR Tokyo Station, 1 Chome-9 Marunouchi, Chiyoda City", "source_queries": ["museums_arts_culture"]},
+    {"id": "PRIpYzi9qeuw", "name": "Night Photoshoot Tour", "url": "https://www.booking.com/attractions/jp/pripyzi9qeuw-night-photoshoot-tour.en-gb.html", "price_per_person": 99.0, "review_score": null, "review_count": 0, "address": "Shinjuku, 3 Chome−38", "source_queries": ["museums_arts_culture", "nature_outdoor"]},
+    {"id": "PRTQrxvNoHou", "name": "Fuji-Hakone Three-day Pass (A-ticket)", "url": "https://www.booking.com/attractions/jp/prtqrxvnohou-fuji-hakone-three-day-pass-a-ticket.en-gb.html", "price_per_person": 60.83, "review_score": 4.88, "review_count": 8, "address": "小田急旅行センター新宿西口", "source_queries": ["museums_arts_culture"]},
+
+    {"id": "PRuukE2knnZL", "name": "The Old Quarter of Tokyo - Yanaka Walking Tour", "url": "https://www.booking.com/attractions/jp/pruuke2knnzl-yanaka-old-quarter-walking-tour.en-gb.html", "price_per_person": 39.01, "review_score": 4.69, "review_count": 209, "address": "Nippori Station", "source_queries": ["nature_outdoor"]},
+    {"id": "PRs0LDyDte5R", "name": "Tokyo Tsukiji Fish Market Food Walking Tour with 5 Tastings", "url": "https://www.booking.com/attractions/jp/prs0ldydte5r-tsukiji-fish-market-food-and-culture-tour.en-gb.html", "price_per_person": 83.47, "review_score": 4.69, "review_count": 489, "address": "Tsukiji Hongwan-ji Temple, 1", "source_queries": ["nature_outdoor"]},
+    {"id": "PROkm70EKYDY", "name": "West-side Bike and Food Tour", "url": "https://www.booking.com/attractions/jp/prokm70ekydy-bicycle-and-food-tour-of-tokyos-west-side.en-gb.html", "price_per_person": 90.4, "review_score": 5.0, "review_count": 1, "address": "Kōenji Station, 4 Chome-48 Koenjiminami, 杉並区 Suginami City", "source_queries": ["nature_outdoor"]},
+    {"id": "PR4GBh1gH1yo", "name": "Asakusa District Two-hour History Tour", "url": "https://www.booking.com/attractions/jp/pr4gbh1gh1yo-asakusa-district-two-hour-history-tour.en-gb.html", "price_per_person": 43.28, "review_score": null, "review_count": 0, "address": "1 Chome-1-3 Asakusa, Taito City", "source_queries": ["nature_outdoor"]},
+    {"id": "PRH8Epeyt8AP", "name": "Kawaguchi Lake, Oshino Hakkai and Matcha Tour", "url": "https://www.booking.com/attractions/jp/prh8epeyt8ap-kawaguchi-lake-oshino-hakkai-and-matcha-tour.en-gb.html", "price_per_person": 51.5, "review_score": 5.0, "review_count": 1, "address": null, "source_queries": ["nature_outdoor"]},
+    {"id": "PROJJO2CFGgt", "name": "Tokyo Customized Private Tour: See Top Attractions in 1 Day", "url": "https://www.booking.com/attractions/jp/projjo2cfggt-tokyo-customized-private-tour-see-top-attractions-in-1-day.en-gb.html", "price_per_person": 244.84, "review_score": 4.9, "review_count": 458, "address": null, "source_queries": ["nature_outdoor"]},
+    {"id": "PRrPTvL6tgRF", "name": "Mt. Fuji Region Tour", "url": "https://www.booking.com/attractions/jp/prrptvl6tgrf-mt-fuji-region-tour.en-gb.html", "price_per_person": 40.54, "review_score": 4.0, "review_count": 1, "address": null, "source_queries": ["nature_outdoor"]}
+  ]
+}
