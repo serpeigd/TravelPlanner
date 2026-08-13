@@ -297,6 +297,9 @@ class Explanation(Frozen):
     """False if the grounding check failed; such text is dropped before it reaches a user."""
     model: str | None = None
     referenced_ids: tuple[str, ...] = ()
+    rejection_reasons: tuple[str, ...] = ()
+    """Why model output was discarded, when it was. Kept so the failure is visible rather
+    than merely absent — a silent fallback looks identical to a system that never tried."""
 
 
 class DataSourceInfo(Frozen):

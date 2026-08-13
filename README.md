@@ -25,8 +25,8 @@ Three principles drive every design decision here:
 | M3 | Budget policy, feature engineering, explainable ranking | ✅ done |
 | M4 | Itinerary, budget composition, hard-constraint validation | ✅ done |
 | M5 | Hedonic price model → `value_for_money` factor | ✅ done |
-| M6 | LLM: preference normalisation + grounded explanation | ⬜ next |
-| M7 | Reproducible evaluation harness | ⬜ |
+| M6 | LLM: preference interpretation + grounded explanation | ✅ done |
+| M7 | Reproducible evaluation harness | ⬜ next |
 | M8 | FastAPI endpoint, Streamlit UI, full docs, Azure→AWS map | ⬜ |
 
 ## Quickstart
@@ -40,9 +40,16 @@ pip install -e ".[dev]"
 pytest
 ```
 
-Nothing needs network access or an API key: the default configuration reads frozen
-snapshot data and a deterministic fake LLM client. See `.env.example` to switch to live
-data or to the local Ollama model.
+Then run the whole pipeline on the reference request:
+
+```bash
+python -m travel_intel.demo
+```
+
+Retrieval, ranking, the price model, the itinerary and the constraint check are offline and
+deterministic — they read a frozen snapshot of real Booking.com data. Only the explanation
+calls a model, and only if you ask it to: `TRAVEL_INTEL_LLM_PROVIDER=fake` uses the
+deterministic template and is the default in CI. See `.env.example` for the rest.
 
 ## Documentation
 
@@ -55,5 +62,7 @@ data or to the local Ollama model.
   and why missing factors are dropped rather than scored as zero.
 - [`docs/ml.md`](docs/ml.md) — the hedonic price model, its cross-validated results against
   two baselines, and what the data cannot support.
+- [`docs/llm.md`](docs/llm.md) — the LLM's two jobs, the grounding check, what the model got
+  wrong on the first real run, and what the check still cannot catch.
 - `docs/architecture.md` — pipeline, data flow, scalability, Azure→AWS mapping *(M8)*.
 - `docs/evaluation.md` — metrics, golden set, results *(M7)*.

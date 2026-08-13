@@ -40,7 +40,9 @@ class Settings(BaseSettings):
     llm_provider: LLMProvider = LLMProvider.OLLAMA
     llm_model: str = "llama3.1:8b"
     ollama_host: str = "http://localhost:11434"
-    llm_timeout_s: float = Field(default=60.0, gt=0)
+    llm_timeout_s: float = Field(default=180.0, gt=0)
+    """Measured: llama3.1:8b on CPU takes ~100 s to write the explanation. The 60 s default
+    this started with timed out on every real run and silently exercised the fallback."""
     llm_temperature: float = Field(default=0.2, ge=0.0, le=2.0)
 
     fixtures_dir: Path = FIXTURES_DIR
