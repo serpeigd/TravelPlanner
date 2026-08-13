@@ -27,3 +27,6 @@ artifacts/*.json
 # OS
 Thumbs.db
 desktop.ini
+
+# Personal brief: kept locally, never published
+Prompt_TravelPlanner.md
