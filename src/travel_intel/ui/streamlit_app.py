@@ -1,8 +1,8 @@
 """Streamlit front end: `streamlit run src/travel_intel/ui/streamlit_app.py`.
 
 Deliberately plain. The point of this project is the reasoning underneath, and a polished
-interface would only hide it — so the screen shows the things an interviewer should be able
-to interrogate: the score broken into its factors, which options the constraints refused,
+interface would only hide it — so the screen shows the things a reviewer should be able to
+interrogate: the score broken into its factors, which options the constraints refused,
 which budget lines are retrieved prices and which are assumptions, and where every fact came
 from.
 """

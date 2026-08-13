@@ -5,8 +5,8 @@ won. That means clicks or bookings, and this project has neither. Hand-labelling
 hotels would not fix it: the labels would encode my own opinion of the ranking, and the
 metric would then confirm it. Fabricated ground truth measures the fabricator.
 
-So this module asks two questions that *can* be answered without labels, and that a hiring
-manager can check:
+So this module asks two questions that *can* be answered without labels, and that a reviewer
+can check for themselves:
 
 1. **Is the ranking a conclusion or a knife-edge?** Perturb the weights and see whether the
    answer survives. Weights are the most arbitrary part of the system; if a ±20 % jitter

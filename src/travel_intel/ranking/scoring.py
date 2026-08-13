@@ -2,7 +2,7 @@
 
 Every candidate gets a small set of [0, 1] factors and a weighted average. No model decides
 the ordering, no LLM is consulted, and the exact weights that produced each number travel
-with the result so a user — or an interviewer — can take the score apart.
+with the result, so anyone reading it can take the score apart.
 
 The formula, and the reasoning behind each weight, is in `docs/ranking.md`.
 """

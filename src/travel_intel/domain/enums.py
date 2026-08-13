@@ -28,8 +28,8 @@ class Currency(StrEnum):
 class Provenance(StrEnum):
     """Where a piece of information came from.
 
-    Every fact surfaced to the user carries one of these. It is what lets the UI (and the
-    interviewer) tell retrieved facts apart from synthetic fixtures and model prose.
+    Every fact surfaced to the user carries one of these. It is what lets the UI tell
+    retrieved facts apart from synthetic fixtures and model prose.
     """
 
     REAL_API = "real_api"

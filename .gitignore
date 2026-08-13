@@ -20,7 +20,7 @@ htmlcov/
 # Secrets / local config
 .env
 
-# Model artifacts (regenerables via `python -m travel_intel.ml.train`)
+# Model artifacts (the price model is fitted per request; see docs/ml.md)
 artifacts/*.joblib
 artifacts/*.json
 

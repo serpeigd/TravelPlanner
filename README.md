@@ -235,10 +235,11 @@ it is milliseconds of arithmetic over a few dozen candidates.
 
 ## 12. Azure → AWS
 
-My professional cloud experience is **Azure, not AWS**. The full 1:1 mapping is in
-[docs/architecture.md](docs/architecture.md#azure--aws) — Databricks ↔ EMR/Glue, Azure ML ↔
-SageMaker, Data Factory ↔ Glue/Step Functions, Blob ↔ S3, Monitor ↔ CloudWatch, Key Vault ↔
-Secrets Manager.
+Nothing in this system is cloud-specific, and the deployment target is the least interesting
+decision on the list. [docs/architecture.md](docs/architecture.md#azure--aws) carries a 1:1
+mapping so the same architecture can be described in either vocabulary — Databricks ↔
+EMR/Glue, Azure ML ↔ SageMaker, Data Factory ↔ Glue/Step Functions, Blob ↔ S3, Monitor ↔
+CloudWatch, Key Vault ↔ Secrets Manager.
 
 What transfers is not the service names but the design: separate compute from storage,
 partition by date, version artefacts instead of mutating them, keep the inference path
@@ -253,7 +254,7 @@ metric. Expanded in [docs/architecture.md](docs/architecture.md#what-would-chang
 
 ## 14. Limitations
 
-Stated plainly, because an interviewer will find them anyway.
+Stated plainly, because a limitation you have to be told about is a limitation you hid.
 
 - **Thirty properties, one city, one date range, one party size.** The price model is
   demonstrative with honest error bars, not a production estimator.

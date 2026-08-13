@@ -23,7 +23,7 @@ model server and no network.
 
 ## Setup
 
-`llama3.1:8b` on local Ollama. Free, offline, runs on a laptop during an interview.
+`llama3.1:8b` on local Ollama. Free, offline, runs on a laptop.
 
 ```bash
 ollama pull llama3.1:8b
@@ -86,7 +86,7 @@ the payload and involves no money at all — no amount of figure-matching sees i
 that the *claim attached to* a figure is true, rather than that the figure exists, is an
 entailment problem: it needs an NLI model or a second structured pass where the explainer
 emits assertions that code can check one by one. This project does not pretend to have solved
-it, and the limitation is stated here rather than discovered by an interviewer.
+it, and the limitation is stated here rather than left to be discovered in production.
 
 ## A bug the tests did not find
 

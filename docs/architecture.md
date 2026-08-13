@@ -109,8 +109,9 @@ event-driven refresh for high-demand destinations — not for rewriting the pipe
 
 ## Azure → AWS
 
-My professional cloud experience is **Azure, not AWS**. This mapping is here so the
-architecture can be discussed in AWS terms without misrepresenting that.
+Nothing in this system is cloud-specific. This mapping exists so the same architecture can be
+described in either vocabulary, and to make the point that the provider is the least
+interesting decision in the table below.
 
 | Concern | What I have used (Azure) | AWS equivalent | Where it fits here |
 |---|---|---|---|

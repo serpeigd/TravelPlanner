@@ -116,7 +116,7 @@ capped by an 8B model — acceptable, since the explanation only reformulates nu
 deterministic code already computed.
 
 **Rejected.** A hosted API as the default. It would add cost and a network dependency to a
-portfolio demo that must run on a laptop during an interview.
+project that must run offline on a laptop.
 
 ---
 
