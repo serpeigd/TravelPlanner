@@ -45,6 +45,19 @@ real Booking.com data. The explanation follows `TRAVEL_INTEL_LLM_PROVIDER` — `
 default in CI) uses a deterministic template; `ollama` calls a local `llama3.1:8b`. See
 `.env.example`.
 
+### Hosted and containerized runs
+
+`requirements.txt` exists only for hosts that insist on one (Streamlit Community Cloud,
+Hugging Face Spaces). It contains a single line — `.[ui]` — so the real dependency list stays
+in `pyproject.toml` and cannot drift from it. Local development should still use
+`pip install -e ".[dev,ui]"`.
+
+`.devcontainer/devcontainer.json` opens the repository in Codespaces and starts the Streamlit
+UI on port 8501 automatically. **Known mismatch:** that container pins the
+`python:1-3.11-bookworm` image while this package declares `requires-python = ">=3.12"`
+(matching CI, `ruff`, and `mypy`), so the install step fails there until the image is bumped
+to 3.12 — see [Limitations](#14-limitations).
+
 ---
 
 ## 1. The problem
@@ -272,6 +285,12 @@ Stated plainly, because a limitation you have to be told about is a limitation y
 - **Food and transport are stated assumptions**, deliberately independent of the budget so the
   compliance check stays meaningful.
 - **~100–128 s per explanation** on CPU with an 8B model.
+- **The devcontainer's Python version is behind the package's.**
+  `.devcontainer/devcontainer.json` pins `python:1-3.11-bookworm`, while `pyproject.toml`
+  declares `requires-python = ">=3.12"` — the same version CI, `ruff` and `mypy` all target.
+  A Codespace built from that file therefore fails on install. Fixing it means either bumping
+  the image or lowering the floor, and the second would mean re-checking every 3.12-only
+  construct in `src/`, so it is left as a flagged mismatch rather than a silent one.
 
 ## 15. Future improvements
 
@@ -299,10 +318,32 @@ Stated plainly, because a limitation you have to be told about is a limitation y
 | [`docs/llm.md`](docs/llm.md) | The LLM's two jobs, the grounding check, what it misses |
 | [`docs/evaluation.md`](docs/evaluation.md) | Golden set, ranking robustness, what is not measured |
 
-## License
+## License and legal notice
 
-[MIT](LICENSE). Use it, fork it, learn from it.
+Copyright © 2026 Sergio Peigneux d'Egmont ([@serpeigd](https://github.com/serpeigd)).
 
-The dataset under `data/fixtures/` is a small sample of publicly listed Booking.com data,
-captured once for demonstration and attributed with source URLs. It is included so the
-project is reproducible, not as a redistributable dataset.
+The source code and documentation in this repository are released under the
+[MIT License](LICENSE) — use it, fork it, learn from it, including commercially, as long as
+the copyright notice and licence text travel with it. It is provided **as is, without warranty
+of any kind**; the full disclaimer is in the LICENSE file.
+
+That grant covers this project's own code and prose. It does **not** cover, and cannot
+relicense, the following:
+
+- **The dataset under `data/fixtures/`.** A small sample of publicly listed Booking.com data
+  for one city and one date range, captured once on 2026-08-13 through the Booking.com MCP
+  connector and attributed with source URLs. It is committed so the pipeline is reproducible
+  and its numbers auditable — **not** as a redistributable dataset, and not under the MIT
+  grant above. Property names, descriptions, imagery references, review scores and prices
+  remain the property of Booking.com and the individual properties. If you fork this
+  repository for anything beyond study, review Booking.com's terms before reusing that
+  fixture, and re-capture your own data rather than treating this one as a source.
+- **Prices, availability and ratings** in that snapshot were true at one instant in 2026 and
+  are now stale by construction. Nothing here is a booking service, a price quote, or travel
+  advice; the itineraries and budgets it produces are illustrative output of a portfolio
+  system, and `docs/data.md` states exactly what the data cannot support.
+- **Third-party components** keep their own licences: [Ollama](https://ollama.com) and the
+  `llama3.1:8b` weights it serves (only used when `TRAVEL_INTEL_LLM_PROVIDER=ollama`), plus
+  FastAPI, Streamlit, scikit-learn and the rest of the dependency tree in `pyproject.toml`.
+
+Nothing in this notice is a legal opinion.
