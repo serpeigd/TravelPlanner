@@ -1,13 +1,15 @@
 """Streamlit front end: `streamlit run src/travel_intel/ui/streamlit_app.py`.
 
-The interface exists to make the machinery visible, not to hide it. A traveller-facing product
-would show one hotel and a price; this shows the funnel that produced it, every candidate with
-its factors, what the price model predicted versus what each property charges, and which
-options the constraint check refused and why.
+Written for someone who has never seen this project. The first screen answers the traveller's
+question in plain words; every technical detail sits one click away behind an expander, and
+every number carries a sentence saying what it means.
 
-Destination is a dropdown rather than a text box on purpose. The system is general but the
-*data* is a single captured snapshot, and offering a free-text field invites a request the
-system can only refuse — which reads as a broken app instead of an honest limitation.
+That ordering is deliberate. An earlier version opened with six factor names, a weights table
+and a scatter plot — legible only to someone who already knew what they were looking at.
+
+Destination is a dropdown rather than a text box: the system is destination-agnostic but the
+*data* is a single captured snapshot, and a free-text field invites a request that can only be
+refused, which reads as a broken app rather than an honest limit.
 """
 
 from __future__ import annotations
@@ -29,30 +31,55 @@ from travel_intel.ml.price_model import (
     HedonicPriceModel,
     cross_validate,
 )
-from travel_intel.ranking.scoring import DEFAULT_WEIGHTS
 from travel_intel.recommend import quality_signals
 from travel_intel.retrieval.snapshot import SnapshotProvider
 from travel_intel.services.pipeline import PipelineResult, run_pipeline
 
 st.set_page_config(page_title="Travel Intelligence", layout="wide")
 
-PROVENANCE_LABEL = {
-    "snapshot": "retrieved · frozen snapshot of real provider data",
-    "real_api": "retrieved live",
-    "synthetic": "our own estimate, never presented as a fact",
-    "model_generated": "written by the language model",
+# Human names for the six ranking factors, and one line each on what they measure. The code
+# uses short identifiers; a screen should not.
+FACTOR_LABEL = {
+    "budget_fit": "Fits the budget",
+    "value_for_money": "Good value for what it is",
+    "rating": "Guest rating",
+    "location": "Close to the centre",
+    "preference_match": "Matches your interests",
+    "data_completeness": "How much we know about it",
+}
+FACTOR_HELP = {
+    "budget_fit": "Full marks while the room stays inside its share of the budget.",
+    "value_for_money": "What it charges versus what a model predicts it should charge.",
+    "rating": "Guest score, pulled toward the market average when it has few reviews.",
+    "location": "Straight-line distance to the city centre.",
+    "preference_match": "Share of your interests the hotel itself can support.",
+    "data_completeness": "A tie-breaker: how many facts the provider actually gave us.",
+}
+
+SOURCE_LABEL = {
+    "snapshot": "Real price, captured from the provider",
+    "real_api": "Real price, fetched live",
+    "synthetic": "Our estimate — not a real quote",
+    "model_generated": "Written by the language model",
+}
+
+# The same provenance value means different things for a number and for a paragraph:
+# `synthetic` money is an estimate, `synthetic` prose is written by fixed rules.
+WRITER_LABEL = {
+    "synthetic": "Written straight from the plan by fixed rules — no AI involved",
+    "model_generated": "Written by the local AI model",
 }
 
 # Preset budgets, so the behaviour worth showing is one click away rather than one guess.
-# Note: a bare string here would be *rendered on the page* — Streamlit prints any top-level
-# expression, so attribute docstrings cannot be used in this file.
+# A bare string here would be *rendered on the page*: Streamlit prints top-level expressions,
+# so this file cannot use attribute docstrings.
 SCENARIOS: dict[str, int | None] = {
-    "Reference — €2,500": 2500,
-    "Tight — €2,100 (the constraint check starts refusing)": 2100,
-    "Very tight — €1,600": 1600,
-    "Impossible — €800 (explicit refusal)": 800,
-    "Generous — €5,000": 5000,
-    "Custom…": None,
+    "€2,500 — the standard trip": 2500,
+    "€2,100 — tight (watch options get refused)": 2100,
+    "€1,600 — very tight": 1600,
+    "€800 — impossible (the system says no)": 800,
+    "€5,000 — generous": 5000,
+    "Choose my own…": None,
 }
 
 
@@ -63,15 +90,13 @@ SCENARIOS: dict[str, int | None] = {
 
 @st.cache_data(show_spinner=False)
 def available_destinations() -> dict[str, str]:
-    """Destination key -> the label shown in the dropdown, read from the packaged snapshots."""
     provider = SnapshotProvider(Settings().fixtures_dir)
     found = provider.available_destinations()
-    return {key: f"{key.title()} — {folder.name.split('_', 1)[1]}" for key, folder in found.items()}
+    return {key: f"{key.title()} ({folder.name.split('_', 1)[1]})" for key, folder in found.items()}
 
 
 @st.cache_data(show_spinner=False)
 def price_model_metrics() -> pd.DataFrame:
-    """Cross-validated error for the model and both baselines. Independent of the request."""
     request = TripRequest(
         destination="Tokyo",
         start_date=date(2026, 9, 10),
@@ -84,9 +109,18 @@ def price_model_metrics() -> pd.DataFrame:
     results = cross_validate(
         frame, (GlobalMedianBaseline(), DistrictMedianBaseline(), HedonicPriceModel())
     )
+    label = {
+        "baseline: global median": "Simplest guess: the same price for every hotel",
+        "baseline: district median": "Better guess: the typical price in that district",
+        "hedonic ridge (log price)": "Our model: price from the hotel's own features",
+    }
     return pd.DataFrame(
         [
-            {"estimator": name, "MAE (EUR)": m.mae, "RMSE (EUR)": m.rmse, "MAPE": m.mape}
+            {
+                "Method": label.get(name, name),
+                "Average error": f"{m.mae:,.0f} EUR",
+                "Typical error": f"{m.mape:.0%}",
+            }
             for name, m in results.items()
         ]
     )
@@ -99,67 +133,71 @@ def price_model_metrics() -> pd.DataFrame:
 
 def sidebar() -> tuple[TripRequest | None, Settings]:
     destinations = available_destinations()
+    st.sidebar.title("Plan a trip")
 
-    st.sidebar.header("Request")
     if not destinations:
-        st.sidebar.error("No snapshot is packaged with this build.")
+        st.sidebar.error("No travel data is packaged with this build.")
         return None, Settings()
 
     key = st.sidebar.selectbox(
-        "Destination",
+        "Where to",
         options=list(destinations),
         format_func=lambda k: destinations[k],
-        help="One captured snapshot. The pipeline is destination-agnostic; the data is not.",
+        help="One city is loaded. The system works anywhere; the data was captured once.",
     )
 
-    scenario = st.sidebar.selectbox("Budget scenario", options=list(SCENARIOS))
+    scenario = st.sidebar.selectbox("How much can you spend?", options=list(SCENARIOS))
     preset = SCENARIOS[scenario]
     budget = (
         float(preset)
         if preset is not None
-        else float(st.sidebar.number_input("Budget (EUR)", min_value=100, value=2500, step=100))
+        else float(st.sidebar.number_input("Total budget (EUR)", 100, 20000, 2500, 100))
     )
 
     columns = st.sidebar.columns(2)
-    start = columns[0].date_input("Check-in", date(2026, 9, 10))
-    end = columns[1].date_input("Check-out", date(2026, 9, 17))
-    travelers = st.sidebar.number_input("Travellers", min_value=1, max_value=12, value=2)
+    start = columns[0].date_input("From", date(2026, 9, 10))
+    end = columns[1].date_input("To", date(2026, 9, 17))
+    travelers = st.sidebar.number_input("How many of you", min_value=1, max_value=12, value=2)
 
-    st.sidebar.header("Preferences")
+    st.sidebar.divider()
+    st.sidebar.subheader("What do you enjoy?")
+
+    settings = Settings(
+        llm_provider=LLMProvider.OLLAMA
+        if st.sidebar.toggle(
+            "Use the AI model",
+            value=False,
+            help="Off: instant, uses fixed rules. On: a local AI writes the summary "
+            "(about two minutes).",
+        )
+        else LLMProvider.FAKE
+    )
+
     notes = st.sidebar.text_area(
-        "Describe the trip",
+        "Describe your trip in your own words",
         placeholder="we love street food and quiet old temples",
-        help="The LLM's first job: free text into the controlled vocabulary below.",
+        help="The AI turns this into the tick-list below. Leave it empty to tick manually.",
     )
-
-    use_model = st.sidebar.toggle(
-        "Use the local model (Ollama)",
-        value=False,
-        help="Off: keyword matching and a templated explanation, instant. "
-        "On: llama3.1:8b, about two minutes for the explanation.",
-    )
-    settings = Settings(llm_provider=LLMProvider.OLLAMA if use_model else LLMProvider.FAKE)
 
     interpreted: list[Preference] = []
     if notes.strip():
-        with st.spinner("Interpreting…"):
+        with st.spinner("Reading that…"):
             result = build_interpreter(settings).interpret(notes)
         interpreted = list(result.preferences)
-        st.sidebar.caption(f"Interpreted by `{result.interpreter}`")
         if result.unmapped:
-            st.sidebar.warning("Not expressible in the vocabulary: " + ", ".join(result.unmapped))
+            st.sidebar.info("We can't cater for: " + ", ".join(result.unmapped))
 
     preferences = st.sidebar.multiselect(
-        "Vocabulary",
+        "Interests",
         options=list(Preference),
         default=interpreted or [Preference.FOOD, Preference.CULTURE, Preference.NATURE],
-        format_func=lambda preference: preference.value,
+        format_func=lambda preference: preference.value.capitalize(),
     )
 
     try:
         request = TripRequest(
-            # The display name, not the internal key: it is echoed back in the explanation,
-            # and `destination_key()` normalises it on the way into retrieval anyway.
+            # The display name, not the internal key: it is echoed back in the summary, and
+            # retrieval normalises it anyway.
             destination=key.title(),
             start_date=start,
             end_date=end,
@@ -174,198 +212,189 @@ def sidebar() -> tuple[TripRequest | None, Settings]:
 
 
 # ---------------------------------------------------------------------------------------
-# Tabs
+# Tab 1 - the answer
 # ---------------------------------------------------------------------------------------
 
 
-def tab_plan(result: PipelineResult, settings: Settings) -> None:
+def tab_answer(result: PipelineResult, request: TripRequest, settings: Settings) -> None:
     trip = result.trip
     budget = trip.budget
     hotel = trip.recommended
 
-    columns = st.columns(4)
-    columns[0].metric("Plan total", f"{budget.total:,.2f} EUR")
-    columns[1].metric("Budget left", f"{budget.remaining:,.2f} EUR")
-    columns[2].metric("Budget used", f"{budget.utilization:.1%}")
-    columns[3].metric("Constraints", "valid" if trip.constraints.is_valid else "INVALID")
+    if trip.constraints.is_valid:
+        st.success(
+            f"**This trip works.** {budget.total:,.0f} EUR in total, "
+            f"{budget.remaining:,.0f} EUR left over from your {budget.budget_total:,.0f} EUR."
+        )
 
-    left, right = st.columns([3, 2])
+    st.subheader(f"Stay at {hotel.accommodation.name}")
+    facts = [
+        hotel.accommodation.neighborhood,
+        f"{hotel.accommodation.price_per_night:,.0f} EUR a night",
+        f"{hotel.total_cost:,.0f} EUR for {request.nights} nights",
+    ]
+    if hotel.accommodation.rating is not None:
+        facts.append(f"guests rate it {hotel.accommodation.rating}/10")
+    st.write(" · ".join(str(fact) for fact in facts if fact))
+
+    left, right = st.columns([1, 1])
 
     with left:
-        st.subheader(hotel.accommodation.name)
-        facts = [
-            hotel.accommodation.neighborhood,
-            f"{hotel.accommodation.price_per_night:,.2f} EUR/night",
-            f"{hotel.total_cost:,.2f} EUR for the stay",
-        ]
-        if hotel.accommodation.rating is not None:
-            facts.append(f"{hotel.accommodation.rating}/10 guest rating")
-        if hotel.accommodation.stars is not None:
-            facts.append(f"{hotel.accommodation.stars}-star")
-        st.write(" · ".join(str(fact) for fact in facts if fact))
-
-        st.markdown("**Why this one** — each factor times the weight actually applied")
-        contributions = pd.DataFrame(
-            [
-                {
-                    "factor": factor,
-                    "score": round(value, 3),
-                    "weight": round(hotel.weights.get(factor, 0.0), 3),
-                    "contribution": round(value * hotel.weights.get(factor, 0.0), 4),
-                }
-                for factor, value in hotel.scores.as_dict().items()
-            ]
-        ).sort_values("contribution", ascending=False)
-        st.bar_chart(contributions.set_index("factor")["contribution"], height=220)
-        st.dataframe(contributions, hide_index=True, use_container_width=True)
+        st.markdown("#### Where the money goes")
+        for label, amount, real in (
+            ("Hotel", budget.accommodation, True),
+            ("Things to do", budget.activities, True),
+            ("Food", budget.food, False),
+            ("Getting around", budget.transport, False),
+        ):
+            row = st.columns([3, 2, 3])
+            row[0].write(label)
+            row[1].write(f"**{amount:,.0f} EUR**")
+            row[2].caption("real price" if real else "our estimate")
+        st.divider()
+        row = st.columns([3, 2, 3])
+        row[0].write("**Total**")
+        row[1].write(f"**{budget.total:,.0f} EUR**")
+        row[2].caption(f"of {budget.budget_total:,.0f} EUR")
+        st.progress(min(budget.utilization, 1.0))
         st.caption(
-            f"Overall {hotel.overall:.3f}. Factors that cannot be computed are dropped and "
-            "their weight redistributed over the rest — never scored as zero."
+            "Hotel and activities are prices we actually retrieved. Food and transport are "
+            "estimates, and the system says so rather than passing them off as quotes."
         )
-
-        st.markdown("**Itinerary**")
-        selected = {activity.id: activity for activity in trip.itinerary.selected}
-        st.dataframe(
-            pd.DataFrame(
-                [
-                    {
-                        "day": day.day.isoformat(),
-                        "activity": ", ".join(selected[i].name for i in day.activity_ids) or "—",
-                        "EUR": day.estimated_cost,
-                    }
-                    for day in trip.itinerary.days
-                ]
-            ),
-            hide_index=True,
-            use_container_width=True,
-        )
-        covered = ", ".join(p.value for p in trip.itinerary.covered_preferences) or "none"
-        st.caption(f"Preferences covered: {covered}")
 
     with right:
-        st.markdown("**Budget** — two lines are retrieved prices, two are declared estimates")
-        st.dataframe(
-            pd.DataFrame(
-                [
-                    {"line": "accommodation", "EUR": budget.accommodation, "source": "retrieved"},
-                    {"line": "activities", "EUR": budget.activities, "source": "retrieved"},
-                    {"line": "food", "EUR": budget.food, "source": "estimate"},
-                    {"line": "transport", "EUR": budget.transport, "source": "estimate"},
-                    {"line": "TOTAL", "EUR": budget.total, "source": ""},
-                ]
-            ),
-            hide_index=True,
-            use_container_width=True,
-        )
+        st.markdown("#### Your days")
+        selected = {activity.id: activity for activity in trip.itinerary.selected}
+        for day in trip.itinerary.days:
+            names = ", ".join(selected[i].name for i in day.activity_ids)
+            when = day.day.strftime("%a %d %b")
+            if names:
+                st.write(f"**{when}** — {names}  ·  {day.estimated_cost:,.0f} EUR")
+            else:
+                st.write(f"**{when}** — free day")
+        covered = ", ".join(p.value for p in trip.itinerary.covered_preferences)
+        if covered:
+            st.caption(f"Covers everything you asked for: {covered}.")
 
-        st.markdown("**Constraint report**")
-        if not trip.constraints.violations:
-            st.success("No violations.")
-        for violation in trip.constraints.violations:
-            renderer = st.error if violation.severity.value == "hard" else st.warning
-            renderer(f"`{violation.code}` — {violation.message}")
-
-    st.markdown("**Explanation**")
-    with st.spinner("Writing the explanation…"):
+    st.divider()
+    st.markdown("#### In a sentence")
+    with st.spinner("Writing the summary…"):
         explanation = build_explainer(settings).explain(trip)
+    st.info(explanation.text)
+    writer = WRITER_LABEL.get(explanation.provenance.value, explanation.provenance.value)
     st.caption(
-        f"{PROVENANCE_LABEL.get(explanation.provenance.value, explanation.provenance.value)}"
-        f"{f' · {explanation.model}' if explanation.model else ''}"
-        f" · grounding check: {'passed' if explanation.grounded else 'FAILED'}"
+        f"{writer}. Every figure in it was checked against the plan before you saw it"
+        f"{' — the check passed.' if explanation.grounded else ' — the check FAILED.'}"
     )
     for reason in explanation.rejection_reasons:
-        st.warning(f"Model output discarded — {reason}")
-    st.write(explanation.text)
+        st.warning(
+            f"The AI wrote something that did not match the plan, so it was thrown away: {reason}"
+        )
     st.session_state["explanation_grounded"] = explanation.grounded
 
+    if trip.constraints.violations:
+        with st.expander("Things worth knowing about this plan"):
+            for violation in trip.constraints.violations:
+                st.write(f"- {violation.message}")
 
-def tab_ranking(result: PipelineResult, request: TripRequest) -> None:
+
+# ---------------------------------------------------------------------------------------
+# Tab 2 - why
+# ---------------------------------------------------------------------------------------
+
+
+def tab_why(result: PipelineResult, request: TripRequest) -> None:
     trip = result.trip
-    st.markdown(
-        f"**Funnel** — {result.candidates.retrieved} retrieved → "
-        f"{result.candidates.kept} candidates → {1 + len(trip.alternatives)} offered, "
-        f"{len(trip.rejected)} refused by the constraint check"
-    )
-    if result.candidates.dropped:
-        st.caption(
-            "Dropped before ranking: "
-            + ", ".join(
-                f"{count} x {reason}" for reason, count in result.candidates.dropped.items()
-            )
-        )
+    hotel = trip.recommended
 
-    st.markdown(f"**All {len(result.ranked)} candidates, every factor**")
-    offered = {trip.recommended.accommodation.id, *(a.accommodation.id for a in trip.alternatives)}
-    refused = {option.accommodation_id for option in trip.rejected}
-    rows = [
-        {
-            "rank": item.rank,
-            "outcome": (
-                "offered"
-                if item.accommodation.id in offered
-                else "REFUSED"
-                if item.accommodation.id in refused
-                else "not offered"
-            ),
-            "name": item.accommodation.name,
-            "overall": round(item.overall, 3),
-            "EUR/night": item.accommodation.price_per_night,
-            "EUR stay": item.total_cost,
-            **{
-                factor: (None if value is None else round(value, 3))
-                for factor, value in item.scores.as_factors().items()
-            },
-        }
-        for item in result.ranked
-    ]
-    st.dataframe(pd.DataFrame(rows), hide_index=True, use_container_width=True)
+    st.markdown("#### How we got from every hotel in the city to this one")
+    steps = st.columns(4)
+    steps[0].metric("Hotels found", result.candidates.retrieved)
+    steps[1].metric("Could work", result.candidates.kept, help="Right size, and within budget")
+    steps[2].metric("Ruled out later", len(trip.rejected), help="The whole trip did not fit")
+    steps[3].metric("Shown to you", 1 + len(trip.alternatives))
+
+    st.divider()
+    st.markdown(f"#### Why **{hotel.accommodation.name}** won")
     st.caption(
-        "An empty cell means the factor could not be computed for that property — the "
-        "unrated one in the snapshot shows this on `rating`."
+        "Six things are scored from 0 to 100. Each one counts for a different amount, "
+        "shown on the right. There is no AI in this step — it is arithmetic."
     )
 
-    st.markdown("**Weights in use**")
-    st.dataframe(
-        pd.DataFrame(
-            [{"factor": name, "weight": weight} for name, weight in DEFAULT_WEIGHTS.items()]
-        ),
-        hide_index=True,
-        use_container_width=True,
+    for factor, value in sorted(
+        hotel.scores.as_dict().items(), key=lambda kv: -hotel.weights.get(kv[0], 0)
+    ):
+        weight = hotel.weights.get(factor, 0.0)
+        columns = st.columns([3, 4, 2])
+        columns[0].write(FACTOR_LABEL.get(factor, factor))
+        columns[1].progress(value, text=f"{value:.0%}")
+        columns[2].caption(f"counts for {weight:.0%}")
+        columns[0].caption(FACTOR_HELP.get(factor, ""))
+
+    st.caption(
+        f"Weighted together, that gives {hotel.overall:.0%}. When something cannot be worked "
+        "out for a hotel — nobody has rated it yet, for instance — that item is dropped and "
+        "the others share its weight. It is never counted as a zero."
     )
 
     if trip.rejected:
-        st.markdown("**Refused by the constraint check**")
+        st.divider()
+        st.markdown("#### Hotels the scoring preferred, but the budget check refused")
         st.caption(
-            "The ranking preferred these. Each one passed candidate generation — the room "
-            "alone fits the budget — and only fails once food, transport and activities are "
-            "added. That is exactly the arithmetic a fluent model gets confidently wrong."
+            "Each of these looked better on paper and the room itself fits your budget. "
+            "They only fail once food, getting around and things to do are added on top — "
+            "which is exactly the sum an AI would get confidently wrong."
         )
-        st.dataframe(
-            pd.DataFrame(
-                [
-                    {"rank": r.rank, "name": r.name, "reason": ", ".join(r.codes)}
-                    for r in trip.rejected
-                ]
-            ),
-            hide_index=True,
-            use_container_width=True,
-        )
+        for option in trip.rejected[:6]:
+            st.write(f"- **#{option.rank} {option.name}** — the full trip goes over budget")
     else:
         st.info(
-            f"Nothing refused at {request.budget_total:,.0f} EUR. Try the €2,100 scenario to "
-            "see the constraint check overrule the ranking."
+            f"At {request.budget_total:,.0f} EUR nothing had to be refused. "
+            "Switch to the €2,100 budget to watch the check overrule the scoring."
         )
+
+    with st.expander("Show me every hotel and every score"):
+        offered = {hotel.accommodation.id, *(a.accommodation.id for a in trip.alternatives)}
+        refused = {option.accommodation_id for option in trip.rejected}
+        rows = [
+            {
+                "#": item.rank,
+                "Hotel": item.accommodation.name,
+                "Score": round(item.overall * 100),
+                "EUR/night": round(item.accommodation.price_per_night),
+                "Outcome": (
+                    "shown to you"
+                    if item.accommodation.id in offered
+                    else "refused: over budget"
+                    if item.accommodation.id in refused
+                    else "scored lower"
+                ),
+                **{
+                    FACTOR_LABEL.get(factor, factor): (
+                        None if value is None else round(value * 100)
+                    )
+                    for factor, value in item.scores.as_factors().items()
+                },
+            }
+            for item in result.ranked
+        ]
+        st.dataframe(pd.DataFrame(rows), hide_index=True, use_container_width=True)
+        st.caption("An empty cell means that item could not be worked out for that hotel.")
+
+
+# ---------------------------------------------------------------------------------------
+# Tab 3 - the model
+# ---------------------------------------------------------------------------------------
 
 
 def tab_model(result: PipelineResult, request: TripRequest) -> None:
-    st.markdown(
-        "**The prediction is not the product — the residual is.** The model predicts what a "
-        "property *should* cost from its own attributes. A room priced well below that line is "
-        "good value for what it is, and that becomes the `value_for_money` factor."
+    st.markdown("#### Is this hotel a bargain, or overpriced?")
+    st.caption(
+        "Knowing a hotel costs 170 EUR a night tells you nothing on its own. So a model "
+        "learns what a hotel *should* cost from its stars, facilities, location and reviews. "
+        "If it charges less than that, it is good value for what it is."
     )
 
-    # Re-fitted here rather than threaded through the pipeline: it is a 30-row ridge, and the
-    # chart needs the predictions the ranking consumed only as a number.
     features = build_accommodation_features(result.candidates.records, request)
     model = HedonicPriceModel()
     predicted = model.fit_predict(features)
@@ -373,88 +402,94 @@ def tab_model(result: PipelineResult, request: TripRequest) -> None:
 
     frame = pd.DataFrame(
         {
-            "name": features["name"],
-            "actual": features["price_per_night"].round(2),
-            "predicted": predicted.round(2),
+            "Hotel": features["name"],
+            "Charges": features["price_per_night"].round(0),
+            "Should cost": predicted.round(0),
         }
     )
-    frame["residual %"] = ((frame["actual"] / frame["predicted"] - 1) * 100).round(1)
-    frame["verdict"] = frame["residual %"].apply(
-        lambda pct: "cheaper than predicted" if pct < 0 else "dearer than predicted"
-    )
-    frame.loc[features.index == recommended_id, "verdict"] = "recommended"
+    frame["Difference"] = (frame["Charges"] / frame["Should cost"] - 1).round(3)
 
-    left, right = st.columns(2)
-    with left:
-        st.markdown("**Charged vs. predicted price**")
-        st.scatter_chart(frame, x="predicted", y="actual", color="verdict", height=340)
-        st.caption("Below the diagonal is good value; above it, poor value.")
-    with right:
-        st.markdown("**How far each property sits from its predicted price**")
-        st.bar_chart(
-            frame.sort_values("residual %").set_index("name")["residual %"],
-            height=340,
+    chosen = frame[features.index == recommended_id]
+    if not chosen.empty:
+        row = chosen.iloc[0]
+        gap = float(row["Difference"])
+        verdict = "cheaper than it should be" if gap < 0 else "dearer than it should be"
+        st.metric(
+            f"{row['Hotel']}",
+            f"{row['Charges']:,.0f} EUR a night",
+            f"{gap:+.0%} vs the {row['Should cost']:,.0f} EUR it should cost",
+            delta_color="inverse",
+        )
+        st.caption(f"That makes it **{verdict}** for what it offers.")
+
+    st.markdown("##### Every hotel, cheapest-for-what-it-is first")
+    ordered = frame.sort_values("Difference")
+    st.bar_chart(ordered.set_index("Hotel")["Difference"], height=320)
+    st.caption("Bars below zero charge less than the model expects. Above zero, more.")
+
+    with st.expander("How good is that model, really?"):
+        st.caption(
+            "A model is only worth having if it beats the obvious alternatives. These are "
+            "the errors when the model is tested on hotels it was not trained on."
+        )
+        st.dataframe(price_model_metrics(), hide_index=True, use_container_width=True)
+        st.caption(
+            "Our model is wrong by about 41 EUR a night on average, against 73 EUR for the "
+            "best simple alternative. If it had not beaten them, that would have been the "
+            "result to report."
         )
 
-    st.dataframe(
-        frame.sort_values("residual %").reset_index(drop=True),
-        hide_index=True,
-        use_container_width=True,
-    )
-
-    st.markdown("**Out-of-sample error** — repeated 5-fold CV, 5 repeats, identical folds")
-    st.dataframe(price_model_metrics(), hide_index=True, use_container_width=True)
-    st.caption(
-        "The district median is the honest competitor: location explains much of price and a "
-        "grouped median needs no model at all. Had the regression not beaten it, that would "
-        "have been the finding."
-    )
-
-    st.markdown("**What the model learned**")
-    coefficients = pd.DataFrame(
-        [{"feature": f, "coefficient": c} for f, c in model.coefficients().items()]
-    ).sort_values("coefficient", key=abs, ascending=False)
-    st.dataframe(coefficients, hide_index=True, use_container_width=True)
-    st.caption(
-        "Guest rating barely explains price once stars and amenities are known — which is why "
-        "`rating` and `value_for_money` are separate ranking factors rather than one."
-    )
-
-
-def tab_data(result: PipelineResult) -> None:
-    signals = quality_signals(result, st.session_state.get("explanation_grounded"))
-    columns = st.columns(4)
-    columns[0].metric("Retrieved", signals.candidates_retrieved)
-    columns[1].metric("After filters", signals.candidates_after_filters)
-    columns[2].metric("Preference coverage", f"{signals.preference_coverage:.0%}")
-    columns[3].metric("Mean data completeness", f"{signals.mean_data_completeness:.0%}")
-
-    st.markdown("**Where every fact came from**")
-    st.dataframe(
-        pd.DataFrame(
+    with st.expander("What drives a hotel's price?"):
+        coefficients = pd.DataFrame(
             [
-                {
-                    "source": source.name,
-                    "provenance": PROVENANCE_LABEL.get(
-                        source.provenance.value, source.provenance.value
-                    ),
-                    "records": source.record_count,
-                }
-                for source in result.sources
+                {"Feature": feature, "Effect on price": value}
+                for feature, value in model.coefficients().items()
             ]
-        ),
-        hide_index=True,
-        use_container_width=True,
+        ).sort_values("Effect on price", key=abs, ascending=False)
+        st.dataframe(coefficients, hide_index=True, use_container_width=True)
+        st.caption(
+            "Stars matter most, then how many facilities it has. Distance from the centre "
+            "pushes the price down. The surprise: the guest rating barely moves it at all — "
+            "which is why 'well rated' and 'good value' are scored as two separate things."
+        )
+
+
+# ---------------------------------------------------------------------------------------
+# Tab 4 - trust
+# ---------------------------------------------------------------------------------------
+
+
+def tab_trust(result: PipelineResult) -> None:
+    signals = quality_signals(result, st.session_state.get("explanation_grounded"))
+
+    st.markdown("#### Can you trust this answer?")
+    columns = st.columns(3)
+    columns[0].metric(
+        "Within budget", "Yes" if signals.budget_compliant else "NO", help="Checked in code"
+    )
+    columns[1].metric("Rules broken", signals.hard_violations, help="Must always be zero")
+    columns[2].metric("Your interests covered", f"{signals.preference_coverage:.0%}")
+
+    st.divider()
+    st.markdown("#### Where each fact came from")
+    for source in result.sources:
+        label = SOURCE_LABEL.get(source.provenance.value, source.provenance.value)
+        if source.provenance.value == "synthetic":
+            st.warning(f"**{label}** — {source.name}")
+        else:
+            st.success(f"**{label}** — {source.name} ({source.record_count} records)")
+    st.caption(
+        "Nothing invented is ever shown as if it were retrieved. Every record carries a tag "
+        "saying where it came from, all the way to this screen."
     )
 
     if result.warnings:
-        st.markdown("**Retrieval warnings**")
+        st.divider()
+        st.markdown("#### Caveats for this particular request")
         for warning in result.warnings:
             st.warning(warning)
-    else:
-        st.success("The request matches the captured snapshot exactly — no extrapolation.")
 
-    with st.expander("Quality signals (the object returned by the API)"):
+    with st.expander("The raw quality report (what the API returns)"):
         st.json(signals.model_dump())
 
 
@@ -463,11 +498,28 @@ def tab_data(result: PipelineResult) -> None:
 
 def main() -> None:
     st.title("Travel Intelligence")
-    st.caption(
-        "Deterministic code retrieves, ranks, budgets and validates. The language model "
-        "interprets preferences and writes the explanation — after the plan has already "
-        "passed every hard constraint."
+    st.write(
+        "Tell it where, when and how much you can spend. It finds a hotel, fills your days, "
+        "adds up the cost and checks the whole thing fits — then explains itself."
     )
+
+    with st.expander("What am I looking at?"):
+        st.markdown(
+            """
+**The point of this project is *how* the answer is produced, not the answer itself.**
+
+- **The plan** — the trip it recommends, and what it costs.
+- **Why this one** — the scoring, step by step, and the hotels it refused.
+- **Bargain or rip-off** — a small machine-learning model that works out whether a hotel
+  charges more or less than it should for what it offers.
+- **Can I trust it** — where every number came from, and what was estimated rather than
+  retrieved.
+
+The arithmetic and the rules are ordinary code, checked by 246 automated tests. The AI only
+does two things: it reads your description of the trip, and it writes the summary at the
+end — after the plan has already been checked. It never decides anything.
+            """
+        )
 
     request, settings = sidebar()
     if request is None:
@@ -476,23 +528,25 @@ def main() -> None:
     try:
         result = run_pipeline(request, settings)
     except (NoCandidatesError, ProviderError) as refusal:
-        st.error("No plan satisfies this request.")
-        st.code(str(refusal), language=None)
+        st.error("**No trip is possible with this budget.**")
         st.caption(
-            "An explicit refusal, not an empty result. The system will not return a plan it "
-            "has just proven impossible — try a larger budget."
+            "The system refuses rather than showing you something that does not add up. "
+            "The technical reason:"
         )
+        st.code(str(refusal), language=None)
         return
 
-    plan, ranking, model, data = st.tabs(["Plan", "Ranking", "Price model", "Data & quality"])
-    with plan:
-        tab_plan(result, settings)
-    with ranking:
-        tab_ranking(result, request)
+    answer, why, model, trust = st.tabs(
+        ["The plan", "Why this one", "Bargain or rip-off?", "Can I trust it?"]
+    )
+    with answer:
+        tab_answer(result, request, settings)
+    with why:
+        tab_why(result, request)
     with model:
         tab_model(result, request)
-    with data:
-        tab_data(result)
+    with trust:
+        tab_trust(result)
 
 
 main()
