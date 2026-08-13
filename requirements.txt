@@ -1,0 +1,6 @@
+# Deployment manifest for hosts that read requirements.txt (Streamlit Community Cloud,
+# Hugging Face Spaces). It installs this repository as a package with its `ui` extra, so the
+# dependency list stays in pyproject.toml and cannot drift from it.
+#
+# Local development does not use this file — use `pip install -e ".[dev,ui]"` instead.
+.[ui]

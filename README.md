@@ -298,3 +298,11 @@ Stated plainly, because a limitation you have to be told about is a limitation y
 | [`docs/ml.md`](docs/ml.md) | The hedonic model, results against two baselines |
 | [`docs/llm.md`](docs/llm.md) | The LLM's two jobs, the grounding check, what it misses |
 | [`docs/evaluation.md`](docs/evaluation.md) | Golden set, ranking robustness, what is not measured |
+
+## License
+
+[MIT](LICENSE). Use it, fork it, learn from it.
+
+The dataset under `data/fixtures/` is a small sample of publicly listed Booking.com data,
+captured once for demonstration and attributed with source URLs. It is included so the
+project is reproducible, not as a redistributable dataset.
