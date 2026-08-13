@@ -3,4 +3,12 @@
 # dependency list stays in pyproject.toml and cannot drift from it.
 #
 # Local development does not use this file — use `pip install -e ".[dev,ui]"` instead.
+#
+# Hosts cache the built environment and key that cache on this file. A change confined to the
+# package therefore does NOT trigger a reinstall: the host keeps serving a stale install while
+# running the app script straight from the fresh checkout, so the code looks updated and the
+# packaged data does not exist. Touch the marker below to force a rebuild.
+#
+# rebuild-marker: 2 (snapshot moved inside the package)
+
 .[ui]

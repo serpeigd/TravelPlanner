@@ -19,7 +19,7 @@ from datetime import date
 import pandas as pd
 import streamlit as st
 
-from travel_intel.config import LLMProvider, Settings
+from travel_intel.config import FIXTURE_SEARCH_PATH, LLMProvider, Settings
 from travel_intel.domain.enums import Preference
 from travel_intel.domain.errors import NoCandidatesError, ProviderError
 from travel_intel.domain.models import TripRequest
@@ -136,7 +136,12 @@ def sidebar() -> tuple[TripRequest | None, Settings]:
     st.sidebar.title("Plan a trip")
 
     if not destinations:
-        st.sidebar.error("No travel data is packaged with this build.")
+        # Say where it looked. "No data" with no path is the kind of error that costs an
+        # afternoon; the search path turns it into a one-glance diagnosis.
+        st.sidebar.error("No travel data found in this build.")
+        st.sidebar.caption("Looked in:")
+        for candidate in FIXTURE_SEARCH_PATH:
+            st.sidebar.caption(f"- `{candidate}` — {'exists' if candidate.is_dir() else 'missing'}")
         return None, Settings()
 
     key = st.sidebar.selectbox(

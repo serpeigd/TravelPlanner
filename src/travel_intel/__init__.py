@@ -4,4 +4,4 @@ Deterministic Python owns the business logic (retrieval, features, ranking, cons
 budget). The LLM is one component of the system, not the system.
 """
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"

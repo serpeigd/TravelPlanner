@@ -10,19 +10,36 @@ from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 PACKAGE_ROOT = Path(__file__).resolve().parent
-FIXTURES_DIR = PACKAGE_ROOT / "data" / "fixtures"
-"""The snapshot ships *inside* the package, not beside it in the repository.
 
-This started life as `<repo>/data/fixtures`, resolved by walking up from this file. That
-works under an editable install, where this file really does sit in the source tree — and
-breaks the moment the package is installed normally, because then it lives in
-`site-packages/travel_intel/` and walking up two levels lands in the Python library
-directory. The symptom was a deployed app reporting `Available: none` while every local test
-passed.
+FIXTURE_SEARCH_PATH: tuple[Path, ...] = (
+    PACKAGE_ROOT / "data" / "fixtures",
+    Path.cwd() / "src" / "travel_intel" / "data" / "fixtures",
+)
+"""Where to look for the snapshot, in order.
 
-Reference data the default configuration cannot run without belongs with the code it serves,
-so it travels through wheels, containers and hosted deployments unchanged.
+The first entry is the real answer: reference data the default configuration cannot run
+without ships *inside* the package, so it travels through wheels, containers and hosted
+deployments unchanged. This started life as `<repo>/data/fixtures`, resolved by walking up
+from this file — which works under an editable install, where this file really does sit in
+the source tree, and breaks the moment the package is installed normally into
+`site-packages/travel_intel/`.
+
+The second entry is a fallback for a source checkout whose installed copy is stale. A hosted
+deploy can run the app script straight from the repository while `import travel_intel`
+resolves to a cached older install; the code is then new and the data missing, which is a
+confusing way to fail.
 """
+
+
+def locate_fixtures() -> Path:
+    """First existing entry in the search path, or the packaged location if none exist."""
+    for candidate in FIXTURE_SEARCH_PATH:
+        if candidate.is_dir():
+            return candidate
+    return FIXTURE_SEARCH_PATH[0]
+
+
+FIXTURES_DIR = locate_fixtures()
 
 ARTIFACTS_DIR = Path("artifacts")
 """Relative to the working directory: these are regenerable outputs, not shipped assets."""

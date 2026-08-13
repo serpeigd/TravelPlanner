@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "travel-intel"
-version = "0.1.0"
+version = "0.1.1"
 description = "Travel Intelligence: retrieval, ranking, ML and evaluation for trip recommendation"
 readme = "README.md"
 license = "MIT"

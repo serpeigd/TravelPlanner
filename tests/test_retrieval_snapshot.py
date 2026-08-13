@@ -10,7 +10,13 @@ from pathlib import Path
 import pytest
 
 import travel_intel
-from travel_intel.config import DataMode, LLMProvider, Settings
+from travel_intel.config import (
+    FIXTURE_SEARCH_PATH,
+    DataMode,
+    LLMProvider,
+    Settings,
+    locate_fixtures,
+)
 from travel_intel.domain.enums import Preference, Provenance
 from travel_intel.domain.errors import NoCandidatesError, ProviderError
 from travel_intel.domain.models import GeoPoint, TripRequest
@@ -56,6 +62,20 @@ class TestPackaging:
             f"{fixtures} is outside {package_dir}: it will not survive a non-editable install"
         )
         assert fixtures.is_dir()
+
+    def test_a_fallback_covers_a_stale_installed_copy(self) -> None:
+        """A hosted deploy can run the app from a fresh checkout against a cached install.
+
+        The code then looks updated while the packaged data is missing — a confusing way to
+        fail. The search path ends at the source tree so that combination still resolves.
+        """
+        assert len(FIXTURE_SEARCH_PATH) >= 2
+        assert FIXTURE_SEARCH_PATH[0].is_relative_to(Path(travel_intel.__file__).resolve().parent)
+        assert locate_fixtures().is_dir()
+
+    def test_the_search_path_is_reported_when_nothing_is_found(self) -> None:
+        """Whatever it resolves to must be one of the places it says it looked."""
+        assert locate_fixtures() in FIXTURE_SEARCH_PATH
 
 
 class TestDestinationKey:
