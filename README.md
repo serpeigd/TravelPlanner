@@ -23,8 +23,8 @@ Three principles drive every design decision here:
 | M1 | Domain contracts (Pydantic), provenance model, config | ✅ done |
 | M2 | Retrieval adapters + real Tokyo snapshot (30 hotels, 27 activities) | ✅ done |
 | M3 | Budget policy, feature engineering, explainable ranking | ✅ done |
-| M4 | Hard-constraint validation + budget breakdown | ⬜ next |
-| M5 | ML price model → `value_for_money` factor | ⬜ |
+| M4 | Itinerary, budget composition, hard-constraint validation | ✅ done |
+| M5 | ML price model → `value_for_money` factor | ⬜ next |
 | M6 | LLM: preference normalisation + grounded explanation | ⬜ |
 | M7 | Reproducible evaluation harness | ⬜ |
 | M8 | FastAPI endpoint, Streamlit UI, full docs, Azure→AWS map | ⬜ |

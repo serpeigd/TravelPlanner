@@ -117,3 +117,57 @@ deterministic code already computed.
 
 **Rejected.** A hosted API as the default. It would add cost and a network dependency to a
 portfolio demo that must run on a laptop during an interview.
+
+---
+
+## ADR-006 — Constraints are checked on the finished plan, and the planner walks the ranking
+
+**Status:** accepted
+
+**Context.** The ranking answers "which accommodation is best". It does not answer "is the
+resulting trip deliverable". A property can top the ranking and still push the total over
+budget once food, transport and activities are added — and it is exactly this arithmetic
+that a fluent language model gets confidently wrong.
+
+**Decision.** Two separate stages. `validate_plan` checks a *complete costed plan* and
+returns a report; `plan_trip` walks the ranking in order and returns the first option whose
+plan passes every hard constraint, keeping the refused ones for explanation. Violations are
+typed: **hard** (over budget, too small for the party, wrong currency) means the plan is
+never returned; **soft** (over the accommodation allowance, an uncovered preference, stale
+snapshot dates) means it is returned with a warning attached.
+
+**Consequences.** "The LLM cannot violate a hard constraint" becomes a property of the
+architecture rather than a hope about prompting: by the time any text is generated, an
+invalid plan has already been discarded. Rejections are visible instead of silent, which is
+what makes the funnel explainable. When nothing validates, the system raises rather than
+answering.
+
+**Rejected.** Enforcing the budget as a filter during candidate generation. It cannot work —
+the room is only one of four cost lines, so affordability is not knowable until the plan
+exists. Candidate generation keeps only the filters that are unarguable in isolation.
+
+**Rejected.** Returning the best invalid plan with a warning. A plan the system has just
+proven impossible is worse than an explicit refusal.
+
+---
+
+## ADR-007 — Food and transport are stated assumptions, not budget shares
+
+**Status:** accepted
+
+**Context.** Accommodation and activities have retrieved prices. Food and local transport do
+not — no provider quotes what a traveller will spend on dinner. The lines still have to be
+in the budget, or "does this trip fit?" is answered against a fiction.
+
+**Decision.** Per-person, per-day estimates per destination (Tokyo: €45 food, €12 transport),
+declared `Provenance.SYNTHETIC`, carried into the response as their own `DataSourceInfo`, and
+charged for `nights` days rather than the calendar span.
+
+**Consequences.** The budget check is meaningful: because the estimates are independent of
+the budget, utilisation varies and a plan can genuinely fail. Retrieved prices and assumed
+ones are never confused in the output.
+
+**Rejected.** Setting food and transport equal to their budget shares. It is circular — the
+plan would consume exactly 100 % of any budget by construction, utilisation would always be
+1.0, and the constraint layer would have nothing left to detect. There is a test asserting
+that doubling the budget leaves both estimated lines unchanged.

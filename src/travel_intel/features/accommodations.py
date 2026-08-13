@@ -17,6 +17,7 @@ import pandas as pd
 from travel_intel.budget import DEFAULT_BUDGET_POLICY, BudgetPolicy
 from travel_intel.domain.enums import BudgetCategory, Preference
 from travel_intel.domain.models import Accommodation, TripRequest
+from travel_intel.stats import shrink
 
 RATING_PRIOR_WEIGHT = 200.0
 """Strength of the prior in the Bayesian shrinkage of guest ratings, in reviews.
@@ -137,8 +138,6 @@ def _shrink_ratings(ratings: pd.Series, review_counts: pd.Series) -> pd.Series:
     market_mean = ratings.mean(skipna=True)
     if pd.isna(market_mean):
         return pd.Series(np.nan, index=ratings.index, dtype="float64")
-    weights = review_counts.fillna(0.0).astype("float64")
-    shrunk = (ratings * weights + market_mean * RATING_PRIOR_WEIGHT) / (
-        weights + RATING_PRIOR_WEIGHT
-    )
+    evidence = review_counts.fillna(0.0).astype("float64")
+    shrunk = shrink(ratings, evidence, float(market_mean), RATING_PRIOR_WEIGHT)
     return shrunk.where(ratings.notna())

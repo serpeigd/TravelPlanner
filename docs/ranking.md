@@ -115,6 +115,39 @@ preference and completeness factors, its `rating` weight is spread across those,
 `weights` map shows `rating` simply absent. This same mechanism is what lets
 `value_for_money` be declared today and start contributing in M5 with no re-tuning.
 
+## Activity selection
+
+Activities are scored on the same `[0, 1]` convention, with their own weights:
+`preference_match` 0.45, `rating` 0.30, `affordability` 0.15, `evidence` 0.10.
+
+Ratings get the same Bayesian shrinkage as hotels, with a **prior of 25 reviews instead of
+200**. Activity review counts in this dataset run 0–2,316 with a median of 7, so the hotel
+prior would flatten every activity onto the market mean. At 25, a 5.0 from a single review
+lands near the mean while a 4.69 from 489 reviews keeps its own score.
+
+`evidence` — reviews relative to that prior, saturating at 25 — exists to close an asymmetry
+the missing-factor rule would otherwise create. Hotels pay for missing data through
+`data_completeness`; activities had no equivalent, so dropping the `rating` factor of an
+unreviewed activity *rewarded* it. A €198 tour with zero reviews was outranking a
+well-reviewed alternative purely by being tagged with two of the user's interests. Charging
+the missing evidence once, explicitly, is the same treatment hotels already get.
+
+The selection itself is **coverage-first, then greedy by score per euro**:
+
+1. **Coverage pass.** One slot reserved per stated preference, best by score. A plain greedy
+   pass fills a week with seven food tours for someone who asked for food, culture *and*
+   nature — every pick locally optimal, the plan as a whole wrong. This pass is why
+   preference coverage is measurable at all.
+2. **Fill pass.** Remaining days filled by score divided by cost, the standard greedy
+   approximation to a knapsack. Ranking this pass by raw score instead left three of seven
+   days empty with the allowance exhausted on two headline tours; efficiency buys more of
+   the trip for the same money.
+
+One activity per day, deliberately: a plan that fills every hour is a plan nobody follows.
+An activity that does not fit the remaining allowance is skipped whole — there is no such
+thing as three quarters of a museum ticket — and days with nothing booked are still shown
+rather than hidden.
+
 ## What this ranking does not do
 
 - **It is not learned.** No click logs exist, so there is nothing to learn from. Fabricating
