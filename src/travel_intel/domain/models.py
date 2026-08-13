@@ -114,8 +114,10 @@ class Accommodation(Frozen):
     currency: Currency = Currency.EUR
     max_occupancy: int = Field(ge=1, le=MAX_TRAVELERS)
     rating: float | None = Field(default=None, ge=0.0, le=10.0)
-    """Provider rating on a 0-10 scale. Adapters normalise 5-star scales on the way in."""
+    """Guest rating on a 0-10 scale. Adapters normalise other scales on the way in."""
     review_count: int | None = Field(default=None, ge=0)
+    stars: int | None = Field(default=None, ge=1, le=5)
+    """Official star classification, distinct from guest ratings and often missing."""
     location: GeoPoint | None = None
     neighborhood: str | None = None
     distance_to_center_km: float | None = Field(default=None, ge=0.0)
@@ -126,6 +128,7 @@ class Accommodation(Frozen):
     COMPLETENESS_FIELDS: ClassVar[tuple[str, ...]] = (
         "rating",
         "review_count",
+        "stars",
         "location",
         "neighborhood",
         "distance_to_center_km",
@@ -178,21 +181,32 @@ class Activity(Frozen):
 
 
 class ScoreBreakdown(Frozen):
-    """Why a candidate got its score. Every factor is on [0, 1] and separately auditable."""
+    """Why a candidate got its score. Every factor is on [0, 1] and separately auditable.
 
-    budget_fit: UnitInterval
-    location: UnitInterval
-    rating: UnitInterval
-    preference_match: UnitInterval
-    data_completeness: UnitInterval
-    value_for_money: UnitInterval | None = None
-    """ML-derived: observed price vs. price predicted from the option's own features.
-
-    None when the price model is unavailable, in which case its weight is redistributed
-    over the remaining factors rather than silently scored as zero.
+    A factor is `None` when the data to compute it honestly is missing — an unrated
+    property has no `rating`, a request whose preferences have no hotel-level evidence has
+    no `preference_match`. Missing factors are dropped and their weight is redistributed
+    over the rest, never imputed as zero: "we don't know" is not "it's bad". Not knowing is
+    already penalised once, through `data_completeness`; scoring it as zero would punish it
+    twice.
     """
 
+    budget_fit: UnitInterval
+    """Always computable: a candidate without a price is not a candidate."""
+    data_completeness: UnitInterval
+    """Always computable: it is a measure of the other fields' presence."""
+    rating: UnitInterval | None = None
+    location: UnitInterval | None = None
+    preference_match: UnitInterval | None = None
+    value_for_money: UnitInterval | None = None
+    """ML-derived: observed price vs. price predicted from the option's own features."""
+
+    def as_factors(self) -> dict[str, float | None]:
+        """Every factor, including the ones that could not be computed."""
+        return dict(self.model_dump())
+
     def as_dict(self) -> dict[str, float]:
+        """Only the factors that were actually computed."""
         return {k: v for k, v in self.model_dump().items() if v is not None}
 
 

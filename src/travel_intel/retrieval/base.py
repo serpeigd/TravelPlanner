@@ -9,11 +9,9 @@ from __future__ import annotations
 import re
 import unicodedata
 from dataclasses import dataclass, field
-from typing import Generic, Protocol, TypeVar
+from typing import Protocol
 
 from travel_intel.domain.models import Accommodation, Activity, DataSourceInfo, TripRequest
-
-R = TypeVar("R", Accommodation, Activity)
 
 DESTINATION_ALIASES = {
     "tokio": "tokyo",  # Spanish/Italian exonym; the user types the request in their language.
@@ -33,7 +31,7 @@ def destination_key(destination: str) -> str:
 
 
 @dataclass(frozen=True)
-class RetrievalResult(Generic[R]):
+class RetrievalResult[R: (Accommodation, Activity)]:
     """Records plus the provenance needed to show the user where they came from."""
 
     records: tuple[R, ...]

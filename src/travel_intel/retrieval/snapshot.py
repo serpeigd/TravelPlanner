@@ -194,6 +194,7 @@ class SnapshotProvider:
             max_occupancy=fixture.searched_adults,
             rating=record.review_score,
             review_count=record.review_count,
+            stars=record.stars,
             location=location,
             neighborhood=record.district,
             distance_to_center_km=(haversine_km(location, center) if location and center else None),

@@ -97,8 +97,8 @@ class TestAccommodation:
             source_url="https://example.invalid/h1",
             retrieved_at=datetime(2026, 8, 1, 12, 0),
         )
-        # 5 of the 6 completeness fields present (location is still missing).
-        assert hotel.data_completeness == pytest.approx(5 / 6, abs=1e-4)
+        # 5 of the 7 completeness fields present (location and stars are still missing).
+        assert hotel.data_completeness == pytest.approx(5 / 7, abs=1e-4)
 
     def test_rating_scale_is_enforced(self) -> None:
         with pytest.raises(ValidationError):
