@@ -52,6 +52,12 @@ src = ["src", "tests"]
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "N", "UP", "B", "SIM", "RUF"]
 
+[tool.ruff.lint.per-file-ignores]
+# The Streamlit app embeds markdown tables inside string literals. A table row cannot be
+# wrapped without breaking the table, so the line-length rule is off for that file only.
+# The formatter still governs the code itself.
+"src/travel_intel/ui/streamlit_app.py" = ["E501"]
+
 [tool.mypy]
 python_version = "3.12"
 files = ["src"]

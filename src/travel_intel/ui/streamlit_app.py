@@ -290,24 +290,39 @@ def tab_answer(result: PipelineResult, request: TripRequest, settings: Settings)
         )
 
     st.divider()
-    st.markdown("#### Your days")
+    booked = len(trip.itinerary.selected)
+    st.markdown(f"#### Activities to book ({booked} of {request.nights} days)")
+    st.caption(
+        "Each of these is a real bookable experience with a real price, one per day. "
+        "The price shown is for the whole party. Open a listing to book it."
+    )
+
+    header = st.columns([2, 6, 2, 3])
+    header[0].caption("DATE")
+    header[1].caption("EXPERIENCE TO BOOK")
+    header[2].caption("PRICE")
+    header[3].caption("")
+
     selected = {activity.id: activity for activity in trip.itinerary.selected}
     for day in trip.itinerary.days:
         activities = [selected[i] for i in day.activity_ids]
         columns = st.columns([2, 6, 2, 3])
         columns[0].write(f"**{day.day.strftime('%a %d %b')}**")
         if not activities:
-            columns[1].caption("Free day — nothing booked")
+            columns[1].caption("Nothing booked. The budget covers the rest of the week.")
             continue
         activity = activities[0]
         columns[1].write(activity.name)
-        columns[2].write(f"{day.estimated_cost:,.0f} EUR")
+        columns[2].write(f"**{day.estimated_cost:,.0f} EUR**")
         if activity.source_url:
-            columns[3].link_button("Book", activity.source_url, width="stretch")
+            columns[3].link_button("Book this", activity.source_url, width="stretch")
 
     covered = ", ".join(p.value for p in trip.itinerary.covered_preferences)
     if covered:
-        st.caption(f"Covers everything you asked for: {covered}.")
+        st.caption(
+            f"Total {trip.itinerary.total_cost:,.0f} EUR. Between them they cover every "
+            f"interest you picked: {covered}."
+        )
 
     st.divider()
     st.markdown("#### In a sentence")
@@ -331,45 +346,16 @@ def tab_answer(result: PipelineResult, request: TripRequest, settings: Settings)
                 renderer = st.error if violation.severity.value == "hard" else st.write
                 renderer(f"- {violation.message}")
 
-    with st.expander("Ready to book?"):
-        st.markdown(
-            "**There is no checkout here, and that is deliberate.** Every link above goes to "
-            "the real provider listing the price came from — nothing on this screen is a "
-            "mock-up. A fake basket in a project whose whole argument is *nothing here is "
-            "fabricated* would undo the argument."
-        )
-        st.markdown(
-            """
-Turning this into a real booking flow is not a bigger button, it is a different class of
-problem — and these are the parts that matter:
-
-- **Re-check availability and price at the moment of booking.** These prices were captured
-  once; the system already warns when a request drifts from what was captured. A quote that
-  is minutes old can be wrong.
-- **Idempotency keys**, so a retry after a timeout does not book the same room twice.
-- **Compensating actions.** A trip is several bookings across providers. If the hotel
-  confirms and a tour fails, something has to unwind it — a saga, not a transaction.
-- **Explicit human confirmation** before anything irreversible or chargeable.
-- **Price drift between quote and confirmation**, surfaced to the traveller rather than
-  silently absorbed.
-
-Everything before that point — searching, ranking, budgeting, validating — is what this
-project actually implements, and it is the part where the reasoning lives.
-            """
-        )
-
     how_it_was_built(
         "the plan",
         """
-- **Pydantic** models validate the request at the boundary and carry the answer back out —
-  reversed dates or a negative budget never reach the pipeline.
-- **The budget is plain Python arithmetic.** No model computes a number that ends up here.
-  Two lines are retrieved prices, two are per-destination assumptions tagged as estimates.
-- **Constraint validation runs on the finished plan** (`constraints.py`) *before* any text is
-  generated. Choosing a refused hotel above re-runs exactly that check — the red banner is
-  the real validator, not a message written for the demo.
-- **The summary is the only AI-written text**, and it is discarded whole if it cites a figure
-  or a hotel that is not in the plan.
+| Step | Built with |
+|---|---|
+| Reading the request | **Pydantic v2**. Bad dates or a negative budget are rejected before the pipeline starts. |
+| Adding up the cost | Plain Python. No model touches a number that reaches this screen. |
+| Checking it fits | `constraints.py`, run on the finished plan. Picking a refused hotel above runs that same check live. |
+| Writing the summary | **llama3.1:8b via Ollama**, running on this machine. It is the only text here written by an AI. |
+| Checking the summary | A grounding check compares every figure in the text against the plan. Text that fails is thrown away, not corrected. |
         """,
     )
 
@@ -461,17 +447,15 @@ def tab_why(result: PipelineResult, request: TripRequest) -> None:
     how_it_was_built(
         "the scoring",
         """
-- **pandas** builds one feature table from the retrieved hotels. The same table feeds this
-  ranking *and* the price model, so the two can never drift apart.
-- **Weighted average of six factors**, all on a 0-1 scale. The weights are stated judgements,
-  not fitted — there is no click data to fit them against, and inventing some would produce a
-  model that recovers the invention.
-- **Bayesian shrinkage on guest ratings**: a 9.2 from 136 reviews is pulled toward the market
-  average, an 8.2 from 23,000 is not. Without it, thin evidence beats strong evidence.
-- **Missing factors are dropped and their weight redistributed**, never scored as zero — "we
-  don't know" and "it's terrible" are different statements.
-- **Robustness is measured, not assumed**: perturbing every weight by ±20 % over 25 seeded
-  runs leaves the top five unchanged (`travel_intel.evaluation`).
+| Step | Built with |
+|---|---|
+| Turning hotels into numbers | **pandas**. One table feeds both this ranking and the price model, so they cannot drift apart. |
+| Combining the six factors | Weighted average, written by hand. The weights are stated judgements. There is no click data to fit them against. |
+| Making ratings comparable | **Bayesian shrinkage**. A 9.2 from 136 reviews gets pulled toward the market average. An 8.2 from 23,000 does not. |
+| Handling missing data | The factor is dropped and its weight shared out. Scoring it zero would confuse "we don't know" with "it's bad". |
+| Checking the weights matter | 25 seeded runs with every weight nudged by 20%. The top five never changed. Code in `travel_intel.evaluation`. |
+
+No AI is involved at any point on this screen.
         """,
     )
 
@@ -550,20 +534,16 @@ def tab_model(result: PipelineResult, request: TripRequest) -> None:
     how_it_was_built(
         "the price model",
         """
-- **scikit-learn `Pipeline`**: median imputation → standard scaling → **Ridge regression**,
-  fitted on the logarithm of the nightly price.
-- **Why the log**: prices run from €70 to €647 and are skewed. In log space the model learns
-  *proportional* differences, which is also how the "20 % cheaper than it should be" reading
-  works.
-- **Why Ridge and not plain least squares**: stars, facility count and rating move together,
-  and regularisation keeps the coefficients stable instead of letting them swing.
-- **This is a hedonic regression** — the same construction used for house-price indices and
-  inflation quality adjustment. The prediction is discarded; the *residual* is the product.
-- **`RepeatedKFold`**, five splits repeated five times with a fixed seed, and every estimator
-  scored on identical folds so the comparison is paired rather than approximate.
-- **Five features for thirty hotels, on purpose.** Eleven facility indicators were available
-  and are collapsed into one count: at this sample size, a parameter per facility fits noise
-  and produces coefficients that look meaningful and are not.
+| Choice | What and why |
+|---|---|
+| The model | **scikit-learn Pipeline**: median imputation, standard scaling, then **Ridge regression**. |
+| The target | The logarithm of the nightly price. Prices run from 70 to 647 EUR and are skewed, so the model learns proportions instead of absolute euros. |
+| Ridge, not plain least squares | Stars, facility count and rating move together. Regularisation stops the coefficients swinging. |
+| The idea | A **hedonic regression**, the same method used for house price indices. The prediction gets thrown away. The residual is what we keep. |
+| Measuring it | **RepeatedKFold**: five splits, repeated five times, fixed seed. All three methods scored on identical folds. |
+| Only five features | Eleven facility flags were available. With thirty hotels, one parameter per facility fits noise, so they are collapsed into a single count. |
+
+No AI is involved here either. This is statistics.
         """,
     )
 
@@ -609,17 +589,14 @@ def tab_trust(result: PipelineResult) -> None:
     how_it_was_built(
         "the trust layer",
         """
-- **Every record carries a provenance tag** — retrieved, frozen snapshot, our estimate, or
-  AI-written. It is a field on the data model, not a note in the documentation, which is why
-  this screen can separate them without any extra plumbing.
-- **The AI's output is checked against the exact data it was given.** The list of quotable
-  figures is derived by walking that same object, so the check cannot drift away from the
-  prompt. Wrong currency, an invented price, or a stay total described as a nightly rate all
-  fail it, and the text is dropped rather than repaired.
-- **The guard is tested in both directions**: nine cases, five dishonest and three honest and
-  one known blind spot it cannot catch, which is counted and reported rather than hidden. A
-  check that fires on truthful output is worse than no check.
-- **248 automated tests** cover this and everything above it, and run on every push.
+| Step | Built with |
+|---|---|
+| Labelling every fact | A `Provenance` field on the data model itself: retrieved, snapshot, our estimate, or AI-written. Not a note in a README. |
+| Catching invented figures | The list of quotable numbers is built by walking the exact object the AI was given, so the check and the prompt cannot drift apart. |
+| What it catches | Wrong currency, a price that appears nowhere, or a seven-night total described as a nightly rate. All three are mistakes llama3.1 actually made. |
+| What happens on failure | The text is dropped whole. Fixing a bad number would leave the sentence around it standing. |
+| Testing the check itself | Nine cases: five dishonest, three honest, one blind spot it cannot catch. That last one is counted and printed, not hidden. |
+| Everything above | **248 automated tests**, run on every push by GitHub Actions. |
         """,
     )
 
@@ -722,20 +699,23 @@ def main() -> None:
     with st.expander("What am I looking at?"):
         st.markdown(
             """
-**The point of this project is *how* the answer is produced, not the answer itself.**
+This looks like a travel site. What it is really showing is **how the answer gets made**.
 
-- **The plan** — the trip it recommends, what it costs, and links to book each piece.
-- **Why this one** — the scoring, step by step, and the hotels it refused.
-- **Bargain or rip-off** — a small machine-learning model working out whether a hotel charges
-  more or less than it should for what it offers.
-- **Can I trust it** — where every number came from, and what was estimated rather than
-  retrieved.
+| Tab | What it shows you |
+|---|---|
+| **The plan** | The trip it picked, what it costs, and where to book each piece. |
+| **Why this one** | The scoring behind that choice, and the hotels it turned down. |
+| **Bargain or rip-off?** | A small model working out if a hotel charges more than it should. |
+| **Can I trust it?** | Where each number came from, and which ones are estimates. |
 
-The arithmetic and the rules are ordinary code, covered by 248 automated tests. The AI only
-does two things: it reads your description of the trip, and it writes the summary at the end
-— after the plan has already been checked. It never decides anything.
+**Where the AI is, and is not.** The AI does two jobs: it reads your description of the trip,
+and it writes the summary at the end. That is all. Picking the hotel, filling the days, adding
+up the cost and checking the budget are ordinary code, covered by 248 tests.
 
-Each tab ends with a **"How this was built"** note on the techniques behind it.
+The order matters. By the time the AI writes anything, the plan has already been checked. If
+it puts a number in the text that is not in the plan, the text gets thrown away.
+
+Every tab has a **"How this was built"** panel at the bottom listing the tools used there.
             """
         )
 
