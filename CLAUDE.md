@@ -81,9 +81,10 @@ or travel advice. Keep that distinction in the README.
 
 ## Scheduled documentation-sync runs
 
-- **No standing authorization to merge or close PRs in this repo.** Sergio told
-  the 2026-08-13 run to merge that day's PR, but that was a one-off instruction,
-  not a general permission. Open the PR and wait unless told otherwise.
+- **Standing authorization to merge doc-only PRs from that task (2026-08-14,
+  explicit decision in chat), once CI is green.** Same bar as any other merge,
+  just no confirmation step, and only for this narrow case: README/`docs/`
+  changes, never product code. If a check fails, don't merge — report why.
 - **This repo moves while you work on it.** That same run hit a merge conflict
   because `main` gained two commits mid-session. Fetch and rebase or merge
   before assuming a docs branch still applies cleanly.
