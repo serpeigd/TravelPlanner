@@ -15,7 +15,7 @@ Three principles drive every decision in this repository:
 
 | | |
 |---|---|
-| Tests | 245 (`pytest`), `mypy --strict` clean, `ruff` clean |
+| Tests | 248 (`pytest`), `mypy --strict` clean, `ruff` clean |
 | Data | 30 real Tokyo properties, 27 activities, captured 2026-08-13 and frozen |
 | Price model | MAE €40.85 vs €73.32 for the best baseline — a 44 % cut |
 | Golden set | 11/11 scenarios pass, 100 % budget compliance, 0 hard violations |
@@ -230,7 +230,7 @@ still **cannot** catch: **[docs/llm.md](docs/llm.md)**.
 
 ## 10. Testing
 
-245 tests, `mypy --strict` over 48 modules, `ruff` for lint and format, all four in CI with no
+248 tests, `mypy --strict` over 48 modules, `ruff` for lint and format, all four in CI with no
 network and no model server.
 
 The tests are written as claims about behaviour, not coverage padding. The interesting ones
