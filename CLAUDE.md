@@ -48,15 +48,15 @@ Concretely, in this codebase:
   trains a model to recover the heuristic that invented them. The one real
   target in this data is price — hence the hedonic model, and nothing more.
 
-## Known leak — `zz_HOWTOLOCAL.txt` (flagged three times now, still unfixed)
+## Resolved — `zz_HOWTOLOCAL.txt` leak (was flagged three times, fixed 2026-08-30)
 
-`zz_HOWTOLOCAL.txt` at the repo root has contained a real local Windows path
-and username since `608c530`. Three documentation-sync passes (this one
-included) have found and reported it; none has removed it, because deleting
-or editing it is a content fix outside a documentation-only task's scope, not
-because it isn't real. **Needs Sergio to delete or scrub this file directly** —
-it is a genuine, currently-public exposure, not a hypothetical one. Now also
-named in the README's Limitations section (§14) so it isn't only visible here.
+`zz_HOWTOLOCAL.txt` at the repo root contained a real local Windows path and
+username since `608c530`. Three documentation-sync passes flagged it without
+fixing it (deleting/editing content was outside that recurring task's scope);
+the weekly engineering-health review deleted the file directly and removed
+the matching README Limitations entry. History still contains the path in
+old commits — a non-issue for a public repo with no secret in it, just a
+stale username, not worth a history rewrite.
 
 ## Known mismatch — the devcontainer can't build
 

@@ -291,12 +291,6 @@ Stated plainly, because a limitation you have to be told about is a limitation y
   A Codespace built from that file therefore fails on install. Fixing it means either bumping
   the image or lowering the floor, and the second would mean re-checking every 3.12-only
   construct in `src/`, so it is left as a flagged mismatch rather than a silent one.
-- **`zz_HOWTOLOCAL.txt` at the repo root leaks a real local path and username**
-  (a Windows `venv`/Streamlit invocation, committed since `608c530`). Flagged by
-  three separate documentation-sync passes now with no fix — removing or
-  redacting it is outside this recurring task's documentation-only scope, so it
-  is named here explicitly rather than left for a fourth pass to rediscover.
-  Needs the repo owner to delete it or scrub the path.
 
 ## 15. Future improvements
 

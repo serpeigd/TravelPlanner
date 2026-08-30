@@ -1,1 +1,0 @@
-C:\Users\sergi\venvs\TravelPlanner\Scripts\streamlit.exe run src/travel_intel/ui/streamlit_app.py
