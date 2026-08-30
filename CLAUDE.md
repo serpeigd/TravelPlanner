@@ -52,11 +52,15 @@ Concretely, in this codebase:
 
 `zz_HOWTOLOCAL.txt` at the repo root contained a real local Windows path and
 username since `608c530`. Three documentation-sync passes flagged it without
-fixing it (deleting/editing content was outside that recurring task's scope);
-the weekly engineering-health review deleted the file directly and removed
-the matching README Limitations entry. History still contains the path in
-old commits — a non-issue for a public repo with no secret in it, just a
-stale username, not worth a history rewrite.
+fixing it (deleting/editing content was outside that recurring task's scope).
+Removed directly on 2026-08-30 — independently, in the same window, by both
+the weekly engineering-health review and a direct chat request — and the
+matching README Limitations entry was dropped with it. **It still exists in
+this repo's git history** — deleting the working-tree file doesn't erase old
+commits. Scrubbing history (`git filter-repo`/BFG + force-push, invalidating
+every existing clone/fork) is a separate, more disruptive action nobody has
+asked for yet, and not worth it for what's exposed: no secret, just a stale
+username in a public repo.
 
 ## Known mismatch — the devcontainer can't build
 
