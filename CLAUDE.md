@@ -48,6 +48,16 @@ Concretely, in this codebase:
   trains a model to recover the heuristic that invented them. The one real
   target in this data is price — hence the hedonic model, and nothing more.
 
+## Known leak — `zz_HOWTOLOCAL.txt` (flagged three times now, still unfixed)
+
+`zz_HOWTOLOCAL.txt` at the repo root has contained a real local Windows path
+and username since `608c530`. Three documentation-sync passes (this one
+included) have found and reported it; none has removed it, because deleting
+or editing it is a content fix outside a documentation-only task's scope, not
+because it isn't real. **Needs Sergio to delete or scrub this file directly** —
+it is a genuine, currently-public exposure, not a hypothetical one. Now also
+named in the README's Limitations section (§14) so it isn't only visible here.
+
 ## Known mismatch — the devcontainer can't build
 
 ⚠️ `.devcontainer/devcontainer.json` pins `python:1-3.11-bookworm`, while
